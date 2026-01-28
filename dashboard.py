@@ -85,129 +85,209 @@ def load_bank_stats():
 def load_model_comparison():
     """Load kết quả so sánh mô hình"""
     try:
-        df = pd.read_csv('./output/model_comparison.csv')
+        df = pd.read_csv('./output/model_comparison_advanced.csv')
         return df
     except FileNotFoundError:
         return None
 
 @st.cache_resource
 def load_model():
-    """Load mô hình ML và vectorizer"""
+    """Load mô hình ML và vectorizers (word + char)"""
     try:
-        with open('./output/best_model.pkl', 'rb') as f:
+        # Load improved model
+        with open('./output/best_model_advanced.pkl', 'rb') as f:
             model = pickle.load(f)
-        with open('./output/tfidf_vectorizer.pkl', 'rb') as f:
-            vectorizer = pickle.load(f)
-        with open('./output/model_metadata.json', 'r', encoding='utf-8') as f:
+        # Load word-level TF-IDF
+        with open('./output/tfidf_word_vectorizer.pkl', 'rb') as f:
+            tfidf_word = pickle.load(f)
+        # Load char-level TF-IDF
+        with open('./output/tfidf_char_vectorizer.pkl', 'rb') as f:
+            tfidf_char = pickle.load(f)
+        # Load metadata
+        with open('./output/model_metadata_advanced.json', 'r', encoding='utf-8') as f:
             metadata = json.load(f)
-        return model, vectorizer, metadata
-    except FileNotFoundError:
-        return None, None, None
+        return model, tfidf_word, tfidf_char, metadata
+    except FileNotFoundError as e:
+        st.error(f"⚠️ Không tìm thấy file model: {e}")
+        return None, None, None, None
 
 # ========================================
-# CLASS VIETNAMESE REVIEW CLEANER
+# CLASS ADVANCED VIETNAMESE REVIEW CLEANER
 # ========================================
-class VietnameseReviewCleaner:
+import unicodedata
+
+class AdvancedVietnameseReviewCleaner:
     """
-    Bộ xử lý text cho reviews tiếng Việt
-    - Chuẩn hóa teencode
-    - Sửa viết tắt
-    - Loại bỏ icon/emoji
-    - Sửa lỗi chính tả phổ biến
+    Bộ xử lý text nâng cao cho tiếng Việt (IMPROVED VERSION)
+    - 150+ teencode words
+    - Unicode normalization (NFC)
+    - Negation handling (không tệ → tích cực)
+    - Advanced typo correction
     """
     
     def __init__(self):
-        # Teencode dictionary
+        # Extended teencode dictionary (150+ words)
         self.teencode_dict = {
-            'k': 'không', 'ko': 'không', 'kh': 'không', 'hok': 'không',
-            'đc': 'được', 'dc': 'được', 'dk': 'được',
-            'vs': 'với', 'vs': 'với',
-            'nx': 'nữa', 'nax': 'nữa',
-            'ạ': '', 'á': '', 'ơi': '',
-            'j': 'gì', 'z': 'gì', 'chi': 'gì',
-            'bik': 'biết', 'bit': 'biết', 'bít': 'biết',
-            'thik': 'thích', 'thix': 'thích',
-            'vl': 'vậy', 'v': 'vậy',
-            'ntn': 'như thế nào', 'nt': 'nhắn tin',
+            # Phủ định
+            'k': 'không', 'ko': 'không', 'hok': 'không', 'hong': 'không',
+            'hem': 'không', 'kg': 'không', 'kh': 'không', 'khong': 'không',
+            'hông': 'không', 'kô': 'không', 'hỏng': 'không',
+            # Được
+            'dc': 'được', 'đc': 'được', 'dk': 'được', 'đk': 'được',
+            'duoc': 'được', 'đươc': 'được',
+            # Với, vậy, vì
+            'vs': 'với', 'vc': 'với', 'v': 'với',
+            'z': 'vậy', 'zay': 'vậy', 'zị': 'vậy',
+            'vk': 'vì', 'vic': 'vì',
+            # Mình, tôi
+            'ms': 'mới', 'mik': 'mình', 'mk': 'mình', 'mh': 'mình', 'mjh': 'mình',
+            'tui': 'tôi', 'toy': 'tôi', 'toj': 'tôi', 'tớ': 'tôi', 't': 'tôi',
+            # Bình thường, như thế nào
             'bt': 'bình thường', 'bth': 'bình thường',
-            'ok': 'được', 'okie': 'được',
-            'oke': 'được', 'okay': 'được',
-            'r': 'rồi', 'rùi': 'rồi', 'ròi': 'rồi',
+            'ntn': 'như thế nào', 'sao': 'như thế nào',
+            # Rồi, nhé
+            'r': 'rồi', 'rùi': 'rồi', 'rui': 'rồi', 'ròi': 'rồi',
+            'ak': 'à', 'ạk': 'ạ', 'nhaa': 'nhé', 'nha': 'nhé',
+            # Cũng, biết
             'cx': 'cũng', 'cug': 'cũng',
-            'ik': 'đi', 'di': 'đi',
-            'vk': 'vợ', 'ck': 'chồng',
-            'ch': 'chị', 'a': 'anh',
-            'e': 'em', 'bạn': 'bạn',
-            'mik': 'mình', 'mk': 'mình', 'mjk': 'mình',
-            'ny': 'người yêu',
-            'wa': 'quá', 'wá': 'quá',
-            'qá': 'quá', 'qu': 'quá',
+            'bik': 'biết', 'bit': 'biết', 'bjt': 'biết', 'biet': 'biết',
+            # Quá, gì
+            'wa': 'quá', 'qá': 'quá', 'wá': 'quá', 'qu': 'quá',
+            'j': 'gì', 'zì': 'gì', 'jì': 'gì', 'dzì': 'gì', 'ji': 'gì', 'gi': 'gì',
+            # Chưa
+            'chs': 'chưa', 'chx': 'chưa', 'chwa': 'chưa',
+            # Nhiều, một
             'nhìu': 'nhiều', 'nhiu': 'nhiều',
-            'zô': 'vào', 'zo': 'vào',
+            '1': 'một', 'mote': 'một', 'mốt': 'một',
+            # Vào, ra
+            'zô': 'vào', 'zo': 'vào', 'zào': 'vào', 'wào': 'vào',
+            # Trước, sau
             'trc': 'trước', 'tr': 'trước',
-            'sau': 'sau', 'ms': 'mới',
-            'lun': 'luôn', 'luôn': 'luôn',
-            'hông': 'không', 'hong': 'không',
-            'rum': 'rồi', 'rùm': 'rồi'
+            # Luôn, nữa
+            'lun': 'luôn', 'nx': 'nữa', 'nax': 'nữa',
+            # Hay, tốt, xấu
+            'hay': 'hay', 'tot': 'tốt', 'xau': 'xấu', 'te': 'tệ',
         }
         
-        # Typo dictionary
+        # Extended typo dictionary
         self.typo_dict = {
-            'giap diện': 'giao diện',
-            'giao diện': 'giao diện',
-            'ko biết': 'không biết',
-            'lag': 'giật lag',
-            'lỗi': 'lỗi',
-            'không sử dụng được': 'không sử dụng được',
-            'rất tốt': 'rất tốt',
-            'rất tiện lợi': 'rất tiện lợi',
-            'ok': 'tốt',
-            'dễ dàng': 'dễ dàng',
-            'app hay': 'ứng dụng tốt'
+            'nhu': 'như', 'nhung': 'nhưng', 'ma': 'mà', 'thi': 'thì',
+            'giap diện': 'giao diện', 'giap dien': 'giao diện',
+            'gianh diện': 'giao diện',
+        }
+        
+        # Negation words (phủ định)
+        self.negation_words = {
+            'không', 'chưa', 'chẳng', 'chả', 'không bao giờ',
+            'chưa bao giờ', 'đừng', 'không phải', 'chẳng phải',
+            'không hề', 'không có', 'không còn', 'không thể',
+            'không nên', 'không được', 'chưa được'
+        }
+        
+        # Negative words (become positive with negation)
+        self.negative_words = {
+            'tệ', 'xấu', 'dở', 'kém', 'tồi', 'thất vọng',
+            'rác', 'thất bại', 'lỗi', 'lag', 'giật', 'đơ',
+            'treo', 'văng', 'crash', 'chậm', 'cùi'
+        }
+        
+        # Positive words (become negative with negation)
+        self.positive_words = {
+            'tốt', 'hay', 'đẹp', 'ổn', 'ok', 'oke', 'mượt',
+            'nhanh', 'tiện', 'tuyệt', 'xuất sắc', 'hoàn hảo',
+            'ưng', 'hài lòng', 'chất lượng'
         }
         
         # Emoji pattern
         self.emoji_pattern = re.compile(
             "["
-            "\U0001F600-\U0001F64F"  # emoticons
-            "\U0001F300-\U0001F5FF"  # symbols & pictographs
-            "\U0001F680-\U0001F6FF"  # transport & map symbols
-            "\U0001F1E0-\U0001F1FF"  # flags
+            "\U0001F600-\U0001F64F"
+            "\U0001F300-\U0001F5FF"
+            "\U0001F680-\U0001F6FF"
+            "\U0001F1E0-\U0001F1FF"
             "\U00002702-\U000027B0"
             "\U000024C2-\U0001F251"
             "]+", flags=re.UNICODE
         )
     
-    def clean_text(self, text):
-        """Làm sạch 1 câu text"""
+    def normalize_unicode(self, text: str) -> str:
+        """Unicode normalization (NFC)"""
+        return unicodedata.normalize('NFC', text)
+    
+    def handle_negation(self, text: str) -> str:
+        """Xử lý phủ định: 'không tệ' → 'POSNEG_tệ' (tích cực)"""
+        words = text.split()
+        result = []
+        i = 0
+        
+        while i < len(words):
+            current_word = words[i]
+            
+            if current_word in self.negation_words:
+                found_sentiment = False
+                
+                for j in range(i + 1, min(i + 4, len(words))):
+                    next_word = words[j]
+                    
+                    if next_word in self.negative_words:
+                        result.append(f"POSNEG_{next_word}")
+                        i = j + 1
+                        found_sentiment = True
+                        break
+                    elif next_word in self.positive_words:
+                        result.append(f"NEGNEG_{next_word}")
+                        i = j + 1
+                        found_sentiment = True
+                        break
+                
+                if not found_sentiment:
+                    result.append(current_word)
+                    i += 1
+            else:
+                result.append(current_word)
+                i += 1
+        
+        return ' '.join(result)
+    
+    def clean_text(self, text: str) -> str:
+        """Làm sạch text với advanced processing"""
         if not isinstance(text, str) or not text.strip():
             return ""
+        
+        # Unicode normalization
+        text = self.normalize_unicode(text)
         
         # Lowercase
         text = text.lower()
         
-        # Loại bỏ emoji
-        text = self.emoji_pattern.sub(r'', text)
+        # Remove emoji
+        text = self.emoji_pattern.sub('', text)
         
-        # Chuẩn hóa khoảng trắng
-        text = re.sub(r'\s+', ' ', text)
+        # Remove special characters (keep Vietnamese)
+        text = re.sub(
+            r'[^\w\s\.,!?áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ]',
+            ' ', text
+        )
         
-        # Thay thế teencode
+        # Normalize whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        # Remove repeated characters (3+ times)
+        text = re.sub(r'(.)\1{2,}', r'\1', text)
+        
+        # Apply teencode dictionary
         words = text.split()
         words = [self.teencode_dict.get(w, w) for w in words]
         text = ' '.join(words)
         
-        # Sửa typo
+        # Apply typo dictionary
         for wrong, correct in self.typo_dict.items():
             text = text.replace(wrong, correct)
         
-        # Loại bỏ ký tự đặc biệt (giữ lại chữ cái, số, dấu câu cơ bản)
-        text = re.sub(r'[^\w\sàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]', ' ', text)
+        # 🔥 HANDLE NEGATION (critical improvement)
+        text = self.handle_negation(text)
         
-        # Chuẩn hóa lại khoảng trắng
-        text = re.sub(r'\s+', ' ', text).strip()
-        
-        return text
+        return ' '.join(text.split())
 
 # ========================================
 # MAPPING TÊN NGÂN HÀNG
@@ -227,14 +307,16 @@ APP_NAMES = {
     'vn.com.msb.smartBanking': 'MSB'
 }
 
-# Khởi tạo text cleaner
-TEXT_CLEANER = VietnameseReviewCleaner()
+# Khởi tạo Advanced text cleaner
+TEXT_CLEANER = AdvancedVietnameseReviewCleaner()
 
 # ========================================
 # HÀM DỰ ĐOÁN SENTIMENT
 # ========================================
-def predict_sentiment(text, model, vectorizer):
-    """Dự đoán sentiment cho text input"""
+def predict_sentiment(text, model, tfidf_word, tfidf_char):
+    """Dự đoán sentiment cho text input (IMPROVED with word + char TF-IDF)"""
+    from scipy.sparse import hstack
+    
     if not text.strip():
         return None, None
     
@@ -244,8 +326,10 @@ def predict_sentiment(text, model, vectorizer):
     # Bước 2: Tách từ tiếng Việt
     text_segmented = word_tokenize(text_cleaned, format="text")
     
-    # Bước 3: Vectorize
-    text_vectorized = vectorizer.transform([text_segmented])
+    # Bước 3: Vectorize với cả word và char TF-IDF
+    text_word = tfidf_word.transform([text_segmented])
+    text_char = tfidf_char.transform([text_segmented])
+    text_vectorized = hstack([text_word, text_char])
     
     # Bước 4: Dự đoán
     prediction = model.predict(text_vectorized)[0]
@@ -278,7 +362,7 @@ st.sidebar.markdown("---")
 df = load_data()
 bank_stats = load_bank_stats()
 model_comparison = load_model_comparison()
-model, vectorizer, metadata = load_model()
+model, tfidf_word, tfidf_char, metadata = load_model()
 
 if df is not None:
     # Thêm cột tên ngân hàng
@@ -557,7 +641,8 @@ if df is not None:
             
             fig = go.Figure()
             
-            colors = ['#3b82f6', '#ef4444', '#10b981']
+            # Extended color palette for 6+ models
+            colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']
             
             for idx, model_name in enumerate(model_comparison.index):
                 values = [model_comparison.loc[model_name, m] for m in metrics]
@@ -565,7 +650,7 @@ if df is not None:
                     name=model_name,
                     x=metrics,
                     y=values,
-                    marker=dict(color=colors[idx], line=dict(color='black', width=2)),
+                    marker=dict(color=colors[idx % len(colors)], line=dict(color='black', width=2)),
                     text=[f"{v:.4f}" for v in values],
                     textposition='outside',
                     textfont=dict(size=11)
@@ -675,7 +760,7 @@ if df is not None:
     with tab4:
         st.header("🔮 Dự đoán Sentiment cho Review mới")
         
-        if model and vectorizer:
+        if model and tfidf_word:
             st.markdown("""
             <div class="prediction-box">
                 <h3 style="color: white; text-align: center;">
@@ -700,7 +785,7 @@ if df is not None:
             
             if predict_button and user_input:
                 with st.spinner('Đang phân tích...'):
-                    sentiment, confidence = predict_sentiment(user_input, model, vectorizer)
+                    sentiment, confidence = predict_sentiment(user_input, model, tfidf_word, tfidf_char)
                     
                     if sentiment:
                         st.markdown("---")
@@ -777,7 +862,7 @@ if df is not None:
                 st.markdown("**😞 Review tiêu cực:**")
                 st.error("App hay bị lỗi, đăng nhập không được. Giao dịch chậm và không ổn định.")
         else:
-            st.warning("⚠️ Chưa load được mô hình ML. Vui lòng kiểm tra file best_model.pkl và tfidf_vectorizer.pkl")
+            st.warning("⚠️ Chưa load được mô hình ML. Vui lòng kiểm tra file best_model_advanced.pkl và tfidf_word_vectorizer.pkl, tfidf_char_vectorizer.pkl")
     
     # ========================================
     # TAB 5: DỮ LIỆU CHI TIẾT

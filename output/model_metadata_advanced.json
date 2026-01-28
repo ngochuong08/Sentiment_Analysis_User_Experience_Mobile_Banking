@@ -1,0 +1,29 @@
+{
+  "model_name": "Ensemble (Voting)",
+  "f1_score": 0.8461,
+  "accuracy": 0.8492500765228038,
+  "roc_auc": 0.0,
+  "training_date": "2026-01-28 08:59:02",
+  "num_features": 5500,
+  "word_features": 4000,
+  "char_features": 1500,
+  "train_samples": 31416,
+  "test_samples": 6534,
+  "used_smote": true,
+  "strategy": "rollback_and_finetune",
+  "optimizations": [
+    "Advanced text cleaning (150+ teencode)",
+    "Negation handling (POSNEG/NEGNEG)",
+    "Unicode normalization (NFC)",
+    "Trigram TF-IDF (4000 word features) - RESTORED",
+    "Char-level TF-IDF (1500 features) - RESTORED",
+    "Total 5500 features (moderate approach)",
+    "SMOTE oversampling (k_neighbors=5)",
+    "INTENSIVE Logistic Regression tuning (32 combinations)",
+    "Focused GridSearchCV (best model priority)",
+    "Ensemble learning (top 3 models)",
+    "5-fold cross-validation",
+    "Dynamic rate limiting",
+    "500 reviews per score"
+  ]
+}
