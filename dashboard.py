@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-WEB DASHBOARD: PHÂN TÍCH CẢM XÚC ỨNG DỤNG NGÂN HÀNG DI ĐỘNG
-Sentiment Analysis Dashboard for Mobile Banking Applications
+WEB DASHBOARD: PHÂN TÍCH CẢM XÚC NGƯỜI DÙNG ĐỐI VỚI CÁC ỨNG DỤNG NGÂN HÀNG DI ĐỘNG TẠI VIỆT NAM
+Based Sentiment Analysis of User Experience in Mobile Banking Applications on App Store
+-
 """
 
 import streamlit as st
