@@ -1,7 +1,5 @@
 # 🏦 Sentiment Analysis - Mobile Banking Applications
 
-**Đồ án tốt nghiệp Đại học - Khoa Khoa học Máy tính**
-
 Phân tích cảm xúc người dùng đối với các ứng dụng ngân hàng di động tại Việt Nam sử dụng Machine Learning và Natural Language Processing.
 
 ---
@@ -245,7 +243,6 @@ drive.mount('/content/drive')
    - `model_metadata.json`
 
 2. Đặt các file vào cùng thư mục với `dashboard.py`
-
 3. Chạy lệnh:
 
 ```bash
@@ -501,19 +498,7 @@ Dự án này là đồ án tốt nghiệp, nhưng rất hoan nghênh mọi đó
 
 Dự án này được phát triển cho mục đích học tập và nghiên cứu.
 
----
-
-## 👨‍💻 Tác giả
-
-**Đồ án tốt nghiệp Đại học**
-
-- **Khoa**: Khoa học Máy tính
-- **Năm**: 2024
-- **Chủ đề**: Sentiment Analysis với Machine Learning
-
----
-
-## 📧 Liên hệ
+# 📧 Liên hệ
 
 Nếu có câu hỏi hoặc góp ý, vui lòng liên hệ qua email hoặc tạo issue trên GitHub.
 

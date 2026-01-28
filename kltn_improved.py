@@ -308,7 +308,9 @@ class AdvancedVietnameseReviewCleaner:
             'chưa bao giờ', 'đừng', 'đừng có', 'không phải',
             'chẳng phải', 'không hề', 'chẳng hề', 'không có',
             'chả có', 'không còn', 'không thể', 'chưa thể',
-            'không nên', 'chưa nên', 'không được', 'chưa được'
+            'không nên', 'chưa nên', 'không được', 'chưa được',
+            'không ai', 'chẳng ai', 'không gì', 'chẳng gì',
+            'k thể', 'ko thể','k đc', 'ko đc','k thể','ko thể',
         }
         
         # Negative words that become positive with negation
@@ -322,8 +324,8 @@ class AdvancedVietnameseReviewCleaner:
             'lỗi nhiều', 'lag', 'giật lag', 'đơ', 'treo', 'lắc',
             'văng', 'crash', 'lỗi thường xuyên', 'chậm', 
             'chậm chạp', 'cùi', 'cùi bắp', 'quá tệ', 
-            'tệ quá đi', 'không ổn', 'không tốt',
-            'xàm','xàm xí',
+            'tệ quá đi', 'không ổn', 'không tốt','ko','k', 'k thể nào', 'ko thể', 'không thể',
+            'xàm','xàm xí','rối',
             'bực', 'ức chế', 'phiền phức', 'rắc rối', 'mất thời gian',
             'khó chịu', 'đáng ghét', 'khó dùng', 'khó sử dụng','ghét',
             'dở dở ương ương', 'đơ đơ', 'lag lag', 'giật giật',
@@ -336,13 +338,13 @@ class AdvancedVietnameseReviewCleaner:
             'sập nguồn', 'sập máy', 'sập app', 
             'sập ứng dụng', 'treo máy', 'treo app', 'treo ứng dụng',
             'chậm kinh khủng', 'chậm kinh', 'chậm vãi',
-            ;
+            'bất tiện',
         }
         
         # Positive words that become negative with negation
         # "không tốt" = tệ, "chưa hay" = dở
         self.positive_words = {
-            'tốt', 'hay', 'đẹp', 'ổn', 'ok', 'oke', 'mượt',
+            'tốt', 'hay', 'đẹp', 'ổn', 'ok', 'oke','okela', 'mượt',
             'nhanh', 'tiện', 'tiện lợi', 'tốt lắm', 'hay lắm',
             'tuyệt', 'tuyệt vời', 'xuất sắc', 'hoàn hảo',
             'ưng', 'ưng ý', 'hài lòng', 'tốt quá', 'hay quá',
@@ -354,6 +356,7 @@ class AdvancedVietnameseReviewCleaner:
             'perfect', 'excellent', 'amazing', 'fantastic',
             'awesome', 'great', 'love', 'loved', 'loving',
             'like', 'liked', 'liking',
+            'được', 'đc', 'dc',
         }
         
         # Emoji pattern
