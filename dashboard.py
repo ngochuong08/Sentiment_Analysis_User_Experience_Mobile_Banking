@@ -116,12 +116,16 @@ def load_model():
 # ========================================
 import unicodedata
 
+
+# ========================================
+# 3. ADVANCED VIETNAMESE TEXT CLEANER
+# ========================================
 class AdvancedVietnameseReviewCleaner:
     """
-    Bộ xử lý text nâng cao cho tiếng Việt (IMPROVED VERSION)
+    Bộ xử lý text nâng cao cho tiếng Việt
     - 150+ teencode words
     - Unicode normalization (NFC)
-    - Negation handling (không tệ → tích cực)
+    - Vietnamese stopwords removal
     - Advanced typo correction
     """
     
@@ -132,70 +136,197 @@ class AdvancedVietnameseReviewCleaner:
             'k': 'không', 'ko': 'không', 'hok': 'không', 'hong': 'không',
             'hem': 'không', 'kg': 'không', 'kh': 'không', 'khong': 'không',
             'hông': 'không', 'kô': 'không', 'hỏng': 'không',
+            
             # Được
             'dc': 'được', 'đc': 'được', 'dk': 'được', 'đk': 'được',
             'duoc': 'được', 'đươc': 'được',
+            
             # Với, vậy, vì
             'vs': 'với', 'vc': 'với', 'v': 'với',
             'z': 'vậy', 'zay': 'vậy', 'zị': 'vậy',
             'vk': 'vì', 'vic': 'vì',
+            
             # Mình, tôi
             'ms': 'mới', 'mik': 'mình', 'mk': 'mình', 'mh': 'mình', 'mjh': 'mình',
-            'tui': 'tôi', 'toy': 'tôi', 'toj': 'tôi', 'tớ': 'tôi', 't': 'tôi',
+            'tui': 'tôi', 'toy': 'tôi', 'toj': 'tôi', 'tớ': 'tôi',
+            't': 'tôi', 'mik': 'mình',
+            
             # Bình thường, như thế nào
             'bt': 'bình thường', 'bth': 'bình thường',
             'ntn': 'như thế nào', 'sao': 'như thế nào',
+            'nthna': 'như thế nào',
+            
             # Rồi, nhé
             'r': 'rồi', 'rùi': 'rồi', 'rui': 'rồi', 'ròi': 'rồi',
             'ak': 'à', 'ạk': 'ạ', 'nhaa': 'nhé', 'nha': 'nhé',
+            'nek': 'nè', 'né': 'nè',
+            
             # Cũng, biết
             'cx': 'cũng', 'cug': 'cũng',
-            'bik': 'biết', 'bit': 'biết', 'bjt': 'biết', 'biet': 'biết',
+            'bik': 'biết', 'bit': 'biết', 'bjt': 'biết',
+            'biet': 'biết',
+            
             # Quá, gì
             'wa': 'quá', 'qá': 'quá', 'wá': 'quá', 'qu': 'quá',
-            'j': 'gì', 'zì': 'gì', 'jì': 'gì', 'dzì': 'gì', 'ji': 'gì', 'gi': 'gì',
+            'j': 'gì', 'zì': 'gì', 'jì': 'gì', 'dzì': 'gì',
+            'ji': 'gì', 'gi': 'gì',
+            
             # Chưa
             'chs': 'chưa', 'chx': 'chưa', 'chwa': 'chưa',
+            
+            # Cảm ơn
+            'tks': 'cảm ơn', 'tk': 'cảm ơn', 'thanks': 'cảm ơn',
+            'tnks': 'cảm ơn', 'cam on': 'cảm ơn', 'tks': 'cảm ơn',
+            
+            # Nói chuyện
+            'nc': 'nói chuyện', 'nch': 'nói chuyện',
+            
+            # Người ta, người
+            'ngta': 'người ta', 'nguoi ta': 'người ta', 'nta': 'người ta',
+            'ng': 'người', 'nguoi': 'người',
+            
+            # Ừ, ok
+            'uk': 'ừ', 'uh': 'ừ', 'ừm': 'ừ',
+            'oke': 'ok', 'okie': 'ok', 'okee': 'ok', 'okey': 'ok',
+            
+            # Đang, làm
+            'đag': 'đang', 'dg': 'đang', 'dang': 'đang',
+            'lm': 'làm', 'lam': 'làm', 'lam': 'làm',
+            
+            # Phải
+            'pk': 'phải', 'fai': 'phải', 'pải': 'phải',
+            'fải': 'phải',
+            
+            # Xin lỗi
+            'xl': 'xin lỗi', 'sr': 'xin lỗi', 'sorry': 'xin lỗi',
+            'sry': 'xin lỗi',
+            
+            # Trả lời
+            'tl': 'trả lời', 'rep': 'trả lời', 'reply': 'trả lời',
+            
+            # Inbox, nhắn tin
+            'ib': 'inbox', 'mess': 'nhắn tin', 'msg': 'nhắn tin',
+            
+            # Sử dụng
+            'sd': 'sử dụng', 'xd': 'sử dụng',
+            
+            # Bạn
+            'bn': 'bạn', 'b': 'bạn', 'bợn': 'bạn',
+            
+            # Mọi người, admin
+            'mn': 'mọi người', 'ad': 'admin', 'adm': 'admin',
+            
+            # App, ứng dụng
+            'app': 'ứng dụng', 'ứg dụng': 'ứng dụng', 
+            'ung dung': 'ứng dụng',
+            
             # Nhiều, một
-            'nhìu': 'nhiều', 'nhiu': 'nhiều',
+            'nhìu': 'nhiều', 'nhiu': 'nhiều', 'nhìu': 'nhiều',
             '1': 'một', 'mote': 'một', 'mốt': 'một',
+            
             # Vào, ra
-            'zô': 'vào', 'zo': 'vào', 'zào': 'vào', 'wào': 'vào',
+            'zô': 'vào', 'zo': 'vào', 'zào': 'vào',
+            'wào': 'vào',
+            
             # Trước, sau
-            'trc': 'trước', 'tr': 'trước',
-            # Luôn, nữa
-            'lun': 'luôn', 'nx': 'nữa', 'nax': 'nữa',
+            'trc': 'trước', 'tr': 'trước', 'trướck': 'trước',
+            'sau': 'sau', 'sao': 'sau',
+            
+            # Luôn
+            'lun': 'luôn', 'luôn': 'luôn',
+            
+            # Nữa
+            'nx': 'nữa', 'nax': 'nữa', 'nưa': 'nữa',
+            
+            # Thích, muốn
+            'thik': 'thích', 'thix': 'thích',
+            'muon': 'muốn', 'mún': 'muốn',
+            
+            # Cái, của
+            'cai': 'cái', 'cá': 'cái',
+            'cua': 'của', 'của': 'của',
+            
             # Hay, tốt, xấu
-            'hay': 'hay', 'tot': 'tốt', 'xau': 'xấu', 'te': 'tệ',
+            'hay': 'hay', 'haii': 'hay',
+            'tot': 'tốt', 'tốtt': 'tốt',
+            'xau': 'xấu', 'te': 'tệ',
         }
         
         # Extended typo dictionary
         self.typo_dict = {
-            'nhu': 'như', 'nhung': 'nhưng', 'ma': 'mà', 'thi': 'thì',
+            'nhu': 'như', 'chi': 'chỉ',
+            'nhung': 'nhưng', 'ma': 'mà', 'thi': 'thì',
+            'tai': 'tại', 'lai': 'lại', 'nua': 'nữa',
+            'dau': 'đâu', 'khi': 'khi', 'rat': 'rất',
+            'den': 'đến', 'cho': 'cho',
+            'chua': 'chưa', 'roi': 'rồi', 'vao': 'vào',
+            'xem': 'xem', 'nhan': 'nhận', 'gui': 'gửi',
             'giap diện': 'giao diện', 'giap dien': 'giao diện',
             'gianh diện': 'giao diện',
         }
         
+        # Vietnamese stopwords
+        self.stopwords = set([
+            'và', 'của', 'có', 'thì', 'là', 'được', 'hoặc',
+            'các', 'này', 'đó', 'những', 'cho', 'từ', 'trong',
+            'nếu', 'khi', 'mà', 'đã', 'sẽ', 'để', 'với',
+            'bởi', 'về', 'như', 'tại', 'hay', 'nhưng',
+            'đến', 'còn', 'thế', 'nào', 'ai', 'gì',
+        ])
+        
         # Negation words (phủ định)
         self.negation_words = {
             'không', 'chưa', 'chẳng', 'chả', 'không bao giờ',
-            'chưa bao giờ', 'đừng', 'không phải', 'chẳng phải',
-            'không hề', 'không có', 'không còn', 'không thể',
-            'không nên', 'không được', 'chưa được'
+            'chưa bao giờ', 'đừng', 'đừng có', 'không phải',
+            'chẳng phải', 'không hề', 'chẳng hề', 'không có',
+            'chả có', 'không còn', 'không thể', 'chưa thể',
+            'không nên', 'chưa nên', 'không được', 'chưa được'
         }
         
-        # Negative words (become positive with negation)
+        # Negative words that become positive with negation
+        # "không tệ" = tốt, "chưa tốt" = tệ
         self.negative_words = {
-            'tệ', 'xấu', 'dở', 'kém', 'tồi', 'thất vọng',
-            'rác', 'thất bại', 'lỗi', 'lag', 'giật', 'đơ',
-            'treo', 'văng', 'crash', 'chậm', 'cùi'
+            'tệ', 'xấu', 'dở', 'kém', 'tồi', 'tệ hại', 'xấu xí',
+            'tệ quá', 'dở quá', 'kém quá', 'tồi tệ', 'tệ nhất',
+            'xấu nhất', 'dở nhất', 'kém nhất', 'thất vọng', 
+            'tệ lắm', 'kém cỏi', 'dở ẹc', 'rác', 'rác rưởi',
+            'thất bại', 'tệ hại', 'ngớ ngẩn', 'ngu', 'lỗi',
+            'lỗi nhiều', 'lag', 'giật lag', 'đơ', 'treo', 'lắc',
+            'văng', 'crash', 'lỗi thường xuyên', 'chậm', 
+            'chậm chạp', 'cùi', 'cùi bắp', 'quá tệ', 
+            'tệ quá đi', 'không ổn', 'không tốt',
+            'xàm','xàm xí',
+            'bực', 'ức chế', 'phiền phức', 'rắc rối', 'mất thời gian',
+            'khó chịu', 'đáng ghét', 'khó dùng', 'khó sử dụng','ghét',
+            'dở dở ương ương', 'đơ đơ', 'lag lag', 'giật giật',
+            'chập chờn', 'điên', 'phí phạm', 'phí thời gian',
+            'lằng nhằng', 'rối rắm', 'lộn xộn', 'hỏng', 'đóng băng',
+            'đơ máy', 'đơ ứng dụng', 'đơ app',
+            'không load được', 'không đăng nhập được', 'không mở được',
+            'không sử dụng được', 'không vào được',
+            'mất kết nối', 'mất mạng', 'mất tín hiệu',
+            'sập nguồn', 'sập máy', 'sập app', 
+            'sập ứng dụng', 'treo máy', 'treo app', 'treo ứng dụng',
+            'chậm kinh khủng', 'chậm kinh', 'chậm vãi',
+            ;
         }
         
-        # Positive words (become negative with negation)
+        # Positive words that become negative with negation
+        # "không tốt" = tệ, "chưa hay" = dở
         self.positive_words = {
             'tốt', 'hay', 'đẹp', 'ổn', 'ok', 'oke', 'mượt',
-            'nhanh', 'tiện', 'tuyệt', 'xuất sắc', 'hoàn hảo',
-            'ưng', 'hài lòng', 'chất lượng'
+            'nhanh', 'tiện', 'tiện lợi', 'tốt lắm', 'hay lắm',
+            'tuyệt', 'tuyệt vời', 'xuất sắc', 'hoàn hảo',
+            'ưng', 'ưng ý', 'hài lòng', 'tốt quá', 'hay quá',
+            'đẹp quá', 'mượt mà', 'nhanh chóng', 'tiện ích',
+            'ổn định', 'bền', 'chất lượng', 'tuyệt hảo',
+            'tốt nhất', 'hay nhất', 'đẹp nhất', 'mượt nhất',
+            'nhanh nhất', 'tiện nhất', 'ưng nhất',
+            'hài lòng nhất', 'hoàn hảo nhất',
+            'xuất sắc nhất','best',
+            'perfect', 'excellent', 'amazing', 'fantastic',
+            'awesome', 'great', 'love', 'loved', 'loving',
+            'like', 'liked', 'liking',
         }
         
         # Emoji pattern
@@ -207,7 +338,8 @@ class AdvancedVietnameseReviewCleaner:
             "\U0001F1E0-\U0001F1FF"
             "\U00002702-\U000027B0"
             "\U000024C2-\U0001F251"
-            "]+", flags=re.UNICODE
+            "]+",
+            flags=re.UNICODE
         )
     
     def normalize_unicode(self, text: str) -> str:
@@ -215,7 +347,11 @@ class AdvancedVietnameseReviewCleaner:
         return unicodedata.normalize('NFC', text)
     
     def handle_negation(self, text: str) -> str:
-        """Xử lý phủ định: 'không tệ' → 'POSNEG_tệ' (tích cực)"""
+        """
+        Xử lý phủ định trong tiếng Việt
+        VD: "không tệ" -> "không_tệ" (tích cực)
+            "không tốt" -> "không_tốt" (tiêu cực)
+        """
         words = text.split()
         result = []
         i = 0
@@ -223,23 +359,34 @@ class AdvancedVietnameseReviewCleaner:
         while i < len(words):
             current_word = words[i]
             
+            # Check if current word is negation
             if current_word in self.negation_words:
+                # Look ahead for next 1-3 words
+                negation_phrase = current_word
                 found_sentiment = False
                 
+                # Check next 3 words for sentiment words
                 for j in range(i + 1, min(i + 4, len(words))):
                     next_word = words[j]
+                    negation_phrase += ' ' + next_word
                     
+                    # Check if it's a negative word (không + negative = positive)
                     if next_word in self.negative_words:
+                        # Transform: "không tệ" -> "POSNEG_tệ" (positive negation)
                         result.append(f"POSNEG_{next_word}")
                         i = j + 1
                         found_sentiment = True
                         break
+                    
+                    # Check if it's a positive word (không + positive = negative)
                     elif next_word in self.positive_words:
+                        # Transform: "không tốt" -> "NEGNEG_tốt" (negative negation)
                         result.append(f"NEGNEG_{next_word}")
                         i = j + 1
                         found_sentiment = True
                         break
                 
+                # If no sentiment word found, keep original negation
                 if not found_sentiment:
                     result.append(current_word)
                     i += 1
@@ -249,8 +396,8 @@ class AdvancedVietnameseReviewCleaner:
         
         return ' '.join(result)
     
-    def clean_text(self, text: str) -> str:
-        """Làm sạch text với advanced processing"""
+    def clean_text(self, text: str, remove_stopwords: bool = False) -> str:
+        """Làm sạch text với nhiều bước xử lý"""
         if not isinstance(text, str) or not text.strip():
             return ""
         
@@ -284,10 +431,32 @@ class AdvancedVietnameseReviewCleaner:
         for wrong, correct in self.typo_dict.items():
             text = text.replace(wrong, correct)
         
-        # 🔥 HANDLE NEGATION (critical improvement)
+        # 🔥 HANDLE NEGATION (before stopwords removal)
         text = self.handle_negation(text)
         
+        # Remove stopwords if requested
+        if remove_stopwords:
+            words = text.split()
+            words = [w for w in words if w not in self.stopwords]
+            text = ' '.join(words)
+        
         return ' '.join(text.split())
+    
+    def clean_dataframe(self, df: pd.DataFrame, text_column: str = 'content') -> pd.DataFrame:
+        """Làm sạch toàn bộ DataFrame"""
+        df_cleaned = df.copy()
+        print(f"🧹 Đang làm sạch {len(df_cleaned):,} reviews...")
+        
+        df_cleaned[f'{text_column}_cleaned'] = df_cleaned[text_column].apply(
+            lambda x: self.clean_text(x, remove_stopwords=False)
+        )
+        
+        empty_reviews = df_cleaned[f'{text_column}_cleaned'].str.strip().eq('').sum()
+        print(f"✅ Hoàn thành!")
+        print(f"   • Reviews trống: {empty_reviews:,}")
+        print(f"   • Reviews hợp lệ: {len(df_cleaned) - empty_reviews:,}\n")
+        
+        return df_cleaned
 
 # ========================================
 # MAPPING TÊN NGÂN HÀNG
@@ -318,7 +487,7 @@ def predict_sentiment(text, model, tfidf_word, tfidf_char):
     from scipy.sparse import hstack
     
     if not text.strip():
-        return None, None
+        return None, None, None, None
     
     # Bước 1: Làm sạch text (giống như lúc training)
     text_cleaned = TEXT_CLEANER.clean_text(text)
@@ -343,7 +512,8 @@ def predict_sentiment(text, model, tfidf_word, tfidf_char):
     
     sentiment = "Tích cực 😊" if prediction == 1 else "Tiêu cực 😞"
     
-    return sentiment, confidence
+    # Return debug info
+    return sentiment, confidence, text_cleaned, text_segmented
 
 # ========================================
 # HEADER
@@ -785,7 +955,7 @@ if df is not None:
             
             if predict_button and user_input:
                 with st.spinner('Đang phân tích...'):
-                    sentiment, confidence = predict_sentiment(user_input, model, tfidf_word, tfidf_char)
+                    sentiment, confidence, text_cleaned, text_segmented = predict_sentiment(user_input, model, tfidf_word, tfidf_char)
                     
                     if sentiment:
                         st.markdown("---")
@@ -840,10 +1010,10 @@ if df is not None:
                                 fig.update_layout(height=300)
                                 st.plotly_chart(fig, use_container_width=True)
                         
-                        # Hiển thị text đã xử lý
+                        # Hiển thị text đã xử lý (DEBUG)
                         st.markdown("### 🔍 Text đã xử lý")
-                        text_segmented = word_tokenize(user_input.lower(), format="text")
-                        st.info(text_segmented)
+                        st.info(f"**Sau clean_text():** {text_cleaned}")
+                        st.info(f"**Sau word_tokenize():** {text_segmented}")
             
             elif predict_button and not user_input:
                 st.warning("⚠️ Vui lòng nhập nội dung review!")

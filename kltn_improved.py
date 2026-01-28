@@ -319,10 +319,24 @@ class AdvancedVietnameseReviewCleaner:
             'xấu nhất', 'dở nhất', 'kém nhất', 'thất vọng', 
             'tệ lắm', 'kém cỏi', 'dở ẹc', 'rác', 'rác rưởi',
             'thất bại', 'tệ hại', 'ngớ ngẩn', 'ngu', 'lỗi',
-            'lỗi nhiều', 'lag', 'giật lag', 'đơ', 'treo', 
+            'lỗi nhiều', 'lag', 'giật lag', 'đơ', 'treo', 'lắc',
             'văng', 'crash', 'lỗi thường xuyên', 'chậm', 
             'chậm chạp', 'cùi', 'cùi bắp', 'quá tệ', 
-            'tệ quá đi', 'không ổn', 'không tốt'
+            'tệ quá đi', 'không ổn', 'không tốt',
+            'xàm','xàm xí',
+            'bực', 'ức chế', 'phiền phức', 'rắc rối', 'mất thời gian',
+            'khó chịu', 'đáng ghét', 'khó dùng', 'khó sử dụng','ghét',
+            'dở dở ương ương', 'đơ đơ', 'lag lag', 'giật giật',
+            'chập chờn', 'điên', 'phí phạm', 'phí thời gian',
+            'lằng nhằng', 'rối rắm', 'lộn xộn', 'hỏng', 'đóng băng',
+            'đơ máy', 'đơ ứng dụng', 'đơ app',
+            'không load được', 'không đăng nhập được', 'không mở được',
+            'không sử dụng được', 'không vào được',
+            'mất kết nối', 'mất mạng', 'mất tín hiệu',
+            'sập nguồn', 'sập máy', 'sập app', 
+            'sập ứng dụng', 'treo máy', 'treo app', 'treo ứng dụng',
+            'chậm kinh khủng', 'chậm kinh', 'chậm vãi',
+            ;
         }
         
         # Positive words that become negative with negation
@@ -335,7 +349,11 @@ class AdvancedVietnameseReviewCleaner:
             'đẹp quá', 'mượt mà', 'nhanh chóng', 'tiện ích',
             'ổn định', 'bền', 'chất lượng', 'tuyệt hảo',
             'tốt nhất', 'hay nhất', 'đẹp nhất', 'mượt nhất',
-            'nhanh nhất', 'tiện nhất', 'ưng nhất'
+            'nhanh nhất', 'tiện nhất', 'ưng nhất',
+            'xuất sắc nhất','best',
+            'perfect', 'excellent', 'amazing', 'fantastic',
+            'awesome', 'great', 'love', 'loved', 'loving',
+            'like', 'liked', 'liking',
         }
         
         # Emoji pattern
