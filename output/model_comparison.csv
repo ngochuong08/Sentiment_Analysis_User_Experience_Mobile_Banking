@@ -1,4 +1,0 @@
-﻿,Accuracy,Precision,Recall,F1-Score,Training Time,Prediction Time
-Naive Bayes,0.8317,0.8383,0.8317,0.8207,0.006,0.0006
-Logistic Regression,0.8363,0.8423,0.8363,0.8261,0.0739,0.0005
-SVM (Linear),0.8249,0.8222,0.8249,0.8192,0.0818,0.0006

@@ -1,9 +1,0 @@
-{
-  "model_name": "Logistic Regression",
-  "f1_score": 0.8261,
-  "accuracy": 0.8362706083001705,
-  "training_date": "2026-01-28 04:24:10",
-  "num_features": 5000,
-  "train_samples": 7032,
-  "test_samples": 1759
-}

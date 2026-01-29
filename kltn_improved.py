@@ -164,10 +164,13 @@ class AdvancedVietnameseReviewCleaner:
             'k': 'không', 'ko': 'không', 'hok': 'không', 'hong': 'không',
             'hem': 'không', 'kg': 'không', 'kh': 'không', 'khong': 'không',
             'hông': 'không', 'kô': 'không', 'hỏng': 'không',
+            'khôg': 'không', 'chả': 'chẳng', 'chăng': 'chẳng',
+            'chẵng': 'chẳng',
             
             # Được
             'dc': 'được', 'đc': 'được', 'dk': 'được', 'đk': 'được',
             'duoc': 'được', 'đươc': 'được',
+            'dược': 'được',
             
             # Với, vậy, vì
             'vs': 'với', 'vc': 'với', 'v': 'với',
@@ -179,15 +182,20 @@ class AdvancedVietnameseReviewCleaner:
             'tui': 'tôi', 'toy': 'tôi', 'toj': 'tôi', 'tớ': 'tôi',
             't': 'tôi', 'mik': 'mình',
             
+            
             # Bình thường, như thế nào
             'bt': 'bình thường', 'bth': 'bình thường',
             'ntn': 'như thế nào', 'sao': 'như thế nào',
             'nthna': 'như thế nào',
+            'nhma': 'nhưng mà',
+            'nma': 'nhưng mà',
             
             # Rồi, nhé
             'r': 'rồi', 'rùi': 'rồi', 'rui': 'rồi', 'ròi': 'rồi',
             'ak': 'à', 'ạk': 'ạ', 'nhaa': 'nhé', 'nha': 'nhé',
             'nek': 'nè', 'né': 'nè',
+            'òi': 'rồi',
+            'oy': 'rồi',
             
             # Cũng, biết
             'cx': 'cũng', 'cug': 'cũng',
@@ -216,6 +224,7 @@ class AdvancedVietnameseReviewCleaner:
             # Ừ, ok
             'uk': 'ừ', 'uh': 'ừ', 'ừm': 'ừ',
             'oke': 'ok', 'okie': 'ok', 'okee': 'ok', 'okey': 'ok',
+            'okela':'ok',
             
             # Đang, làm
             'đag': 'đang', 'dg': 'đang', 'dang': 'đang',
@@ -331,14 +340,14 @@ class AdvancedVietnameseReviewCleaner:
             'dở dở ương ương', 'đơ đơ', 'lag lag', 'giật giật',
             'chập chờn', 'điên', 'phí phạm', 'phí thời gian',
             'lằng nhằng', 'rối rắm', 'lộn xộn', 'hỏng', 'đóng băng',
-            'đơ máy', 'đơ ứng dụng', 'đơ app',
+            'đơ máy', 'đơ ứng dụng', 'đơ app', 'đứng hình','bị đơ',
             'không load được', 'không đăng nhập được', 'không mở được',
             'không sử dụng được', 'không vào được',
             'mất kết nối', 'mất mạng', 'mất tín hiệu',
             'sập nguồn', 'sập máy', 'sập app', 
             'sập ứng dụng', 'treo máy', 'treo app', 'treo ứng dụng',
             'chậm kinh khủng', 'chậm kinh', 'chậm vãi',
-            'bất tiện',
+            'bất tiện', 'rối mắt',
         }
         
         # Positive words that become negative with negation
@@ -379,8 +388,8 @@ class AdvancedVietnameseReviewCleaner:
     def handle_negation(self, text: str) -> str:
         """
         Xử lý phủ định trong tiếng Việt
-        VD: "không tệ" -> "không_tệ" (tích cực)
-            "không tốt" -> "không_tốt" (tiêu cực)
+        VD: "không tệ" -> "POSNEG_tệ" (tích cực)
+            "không tốt" -> "NEGNEG_tốt" (tiêu cực)
         """
         words = text.split()
         result = []
@@ -666,6 +675,149 @@ print("📊 PHÂN BỐ SENTIMENT:")
 for sentiment, count in sentiment_counts.items():
     print(f"   {'😊' if sentiment == 'tích cực' else '😞'} {sentiment.upper()}: {count:,} ({count/total*100:.1f}%)")
 
+# ========================================
+# 8.1. CONTENT-BASED SENTIMENT RE-LABELING
+# ========================================
+print("\n🔍 Phân tích sentiment dựa trên NỘI DUNG bình luận...")
+
+def analyze_content_sentiment(row):
+    """
+    Phân tích sentiment thực tế dựa trên nội dung text
+    Returns: (should_relabel, new_sentiment, confidence_score, reason)
+    """
+    score = row['score']
+    text = str(row['content_cleaned']).lower()
+    
+    if not text or len(text.split()) < 3:
+        return (False, None, 0.0, "Text too short")
+    
+    # Count sentiment words
+    words = text.split()
+    word_count = len(words)
+    neg_count = sum(1 for w in words if w in cleaner.negative_words)
+    pos_count = sum(1 for w in words if w in cleaner.positive_words)
+    
+    # Calculate sentiment score (-1 to +1)
+    # Negative: more negative words → closer to -1
+    # Positive: more positive words → closer to +1
+    if neg_count + pos_count == 0:
+        return (False, None, 0.0, "No sentiment words")
+    
+    sentiment_score = (pos_count - neg_count) / (neg_count + pos_count + 1)
+    sentiment_ratio = neg_count / (pos_count + 1) if pos_count > 0 else neg_count
+    
+    # Current label based on score
+    current_sentiment = 1 if score >= 4 else 0
+    
+    # ==== RE-LABELING RULES ====
+    
+    # Case 1: High score (4-5) BUT strongly negative content
+    # Re-label: Positive → Negative (prioritize content over score)
+    if score >= 4:
+        # Strong negative signals
+        if neg_count >= 3 and pos_count == 0:
+            # "lỗi thanh toán, khó sử dụng, bực mình" (4 sao) → negative
+            return (True, 0, 0.85, f"High score but strong negative content ({neg_count} neg, 0 pos)")
+        
+        if neg_count >= 5 and pos_count <= 1:
+            # "nhiều lỗi, lag, đơ, treo, chậm" (4 sao) → negative
+            return (True, 0, 0.90, f"High score but very strong negative ({neg_count} neg, {pos_count} pos)")
+        
+        if neg_count >= 2 and pos_count == 0 and word_count <= 15:
+            # Short review with clear negative sentiment
+            return (True, 0, 0.80, f"High score but short negative review ({neg_count} neg)")
+        
+        if sentiment_score < -0.5 and neg_count >= 3:
+            # Sentiment score strongly negative
+            return (True, 0, 0.85, f"High score but negative score: {sentiment_score:.2f}")
+    
+    # Case 2: Low score (1-2) - TRUST THE SCORE, DON'T RE-LABEL
+    # Reason: Users often use SARCASM in 1-2 star reviews
+    # Example: "Wow, hay quá" (1 star) = sarcasm, actually negative
+    # → Keep as negative based on score
+    elif score <= 2:
+        # Low score is STRONG ground truth for negative sentiment
+        # Even if content has positive words, it's likely sarcasm/irony
+        # → NO RE-LABELING for 1-2 stars
+        pass
+    
+    # Case 3: Medium score (3) - analyze content more carefully
+    # Score 3 is ambiguous - let content decide
+    elif score == 3:
+        # Score 3 is ambiguous - let content decide
+        if neg_count >= 4 and pos_count <= 1:
+            # Clear negative content → negative
+            return (True, 0, 0.75, f"Score 3 with negative content ({neg_count} neg)")
+        
+        if pos_count >= 4 and neg_count <= 1:
+            # Clear positive content → positive
+            return (True, 1, 0.75, f"Score 3 with positive content ({pos_count} pos)")
+    
+    # No re-labeling needed
+    return (False, None, 0.0, "No conflict")
+
+# Apply content-based analysis
+print("   🔧 Analyzing content sentiment...")
+analysis_results = df_cleaned.apply(analyze_content_sentiment, axis=1)
+
+# Extract results
+df_cleaned['should_relabel'] = [r[0] for r in analysis_results]
+df_cleaned['new_sentiment'] = [r[1] for r in analysis_results]
+df_cleaned['relabel_confidence'] = [r[2] for r in analysis_results]
+df_cleaned['relabel_reason'] = [r[3] for r in analysis_results]
+
+# Count relabeled reviews
+relabeled_count = df_cleaned['should_relabel'].sum()
+print(f"   ⚠️  Phát hiện {relabeled_count:,} reviews cần re-label ({relabeled_count/len(df_cleaned)*100:.2f}%)")
+
+if relabeled_count > 0:
+    print("\n📝 VÍ DỤ REVIEWS ĐƯỢC RE-LABEL:")
+    sample_relabeled = df_cleaned[df_cleaned['should_relabel']].head(5)
+    
+    for idx, row in sample_relabeled.iterrows():
+        old_sentiment = 'Tích cực' if row['sentiment_label'] == 1 else 'Tiêu cực'
+        new_sentiment = 'Tích cực' if row['new_sentiment'] == 1 else 'Tiêu cực'
+        print(f"\n   • Score {row['score']}⭐: {row['content'][:80]}...")
+        print(f"     {old_sentiment} → {new_sentiment} (confidence: {row['relabel_confidence']:.0%})")
+        print(f"     Lý do: {row['relabel_reason']}")
+    
+    # Apply re-labeling
+    print(f"\n   🔄 Đang re-label {relabeled_count:,} reviews...")
+    df_cleaned.loc[df_cleaned['should_relabel'], 'sentiment_label'] = df_cleaned.loc[df_cleaned['should_relabel'], 'new_sentiment']
+    df_cleaned.loc[df_cleaned['should_relabel'], 'sentiment'] = df_cleaned.loc[df_cleaned['should_relabel'], 'new_sentiment'].apply(
+        lambda x: 'positive' if x == 1 else 'negative'
+    )
+    df_cleaned.loc[df_cleaned['should_relabel'], 'sentiment_vi'] = df_cleaned.loc[df_cleaned['should_relabel'], 'new_sentiment'].apply(
+        lambda x: 'tích cực' if x == 1 else 'tiêu cực'
+    )
+    
+    # Statistics by confidence level
+    high_conf = (df_cleaned['should_relabel']) & (df_cleaned['relabel_confidence'] >= 0.85)
+    med_conf = (df_cleaned['should_relabel']) & (df_cleaned['relabel_confidence'] >= 0.75) & (df_cleaned['relabel_confidence'] < 0.85)
+    
+    print(f"\n   📊 RE-LABELING STATISTICS:")
+    print(f"      • High confidence (≥85%): {high_conf.sum():,}")
+    print(f"      • Medium confidence (75-84%): {med_conf.sum():,}")
+    print(f"      • Total re-labeled: {relabeled_count:,}")
+    
+    # Cleanup temporary columns
+    df_cleaned.drop(['should_relabel', 'new_sentiment', 'relabel_confidence', 'relabel_reason'], axis=1, inplace=True)
+    
+    print(f"\n✅ Đã re-label {relabeled_count:,} reviews dựa trên NỘI DUNG")
+    print(f"✅ Total reviews: {len(df_cleaned):,}\n")
+else:
+    # Cleanup temporary columns
+    df_cleaned.drop(['should_relabel', 'new_sentiment', 'relabel_confidence', 'relabel_reason'], axis=1, inplace=True)
+    print("   ✅ Không có reviews cần re-label\n")
+
+# Recalculate sentiment distribution
+sentiment_counts = df_cleaned['sentiment_vi'].value_counts()
+total = len(df_cleaned)
+
+print("📊 PHÂN BỐ SAU KHI LỌC:")
+for sentiment, count in sentiment_counts.items():
+    print(f"   {'😊' if sentiment == 'tích cực' else '😞'} {sentiment.upper()}: {count:,} ({count/total*100:.1f}%)")
+
 # Check class imbalance
 imbalance_ratio = sentiment_counts.max() / sentiment_counts.min()
 print(f"\n⚖️  Imbalance Ratio: {imbalance_ratio:.2f}")
@@ -689,6 +841,128 @@ df_cleaned['content_segmented'] = df_cleaned['content_cleaned'].apply(
     lambda x: word_tokenize(x, format="text") if isinstance(x, str) and x.strip() else ""
 )
 print("✅ Hoàn thành!\n")
+
+# ========================================
+# 9.1. ADD SYNTHETIC NEGATION EXAMPLES
+# ========================================
+print("="*80)
+print("BƯỚC 5.1: THÊM SYNTHETIC NEGATION EXAMPLES")
+print("="*80 + "\n")
+
+print("🔧 Adding synthetic negation examples for vocabulary learning...")
+
+# Create synthetic examples to ensure TF-IDF learns POSNEG/NEGNEG tokens
+synthetic_negations = []
+
+# Positive negations (không + negative word = positive sentiment)
+# These should create POSNEG_xxx tokens
+# Include TEENCODE VARIANTS: k, ko, kg, hok, hong, hem, etc.
+pos_neg_examples = [
+    # Standard form
+    ('app không tệ', 4, 1, 'không_tệ → POSNEG_tệ'),
+    ('ứng dụng không dở', 4, 1, 'không_dở → POSNEG_dở'),
+    ('không xấu lắm', 4, 1, 'không_xấu → POSNEG_xấu'),
+    ('không kém', 5, 1, 'không_kém → POSNEG_kém'),
+    ('không tệ lắm', 5, 1, 'không_tệ → POSNEG_tệ'),
+    ('app mượt không tệ', 5, 1, 'không_tệ → POSNEG_tệ'),
+    ('giao dịch nhanh không dở', 4, 1, 'không_dở → POSNEG_dở'),
+    ('chất lượng không xấu', 4, 1, 'không_xấu → POSNEG_xấu'),
+    
+    # Teencode variants: k, ko, kg
+    ('app k tệ', 4, 1, 'k_tệ → POSNEG_tệ'),
+    ('ứng dụng ko tệ', 4, 1, 'ko_tệ → POSNEG_tệ'),
+    ('k dở', 4, 1, 'k_dở → POSNEG_dở'),
+    ('ko xấu', 4, 1, 'ko_xấu → POSNEG_xấu'),
+    ('kg tệ lắm', 5, 1, 'kg_tệ → POSNEG_tệ'),
+    ('app mượt k dở', 5, 1, 'k_dở → POSNEG_dở'),
+    
+    # Teencode variants: hok, hong, hem
+    ('hok tệ', 4, 1, 'hok_tệ → POSNEG_tệ'),
+    ('hong dở', 4, 1, 'hong_dở → POSNEG_dở'),
+    ('hem xấu', 4, 1, 'hem_xấu → POSNEG_xấu'),
+    ('hok kém lắm', 5, 1, 'hok_kém → POSNEG_kém'),
+    
+    # Teencode variants: chả, chẳng, chưa
+    ('chả tệ', 4, 1, 'chả_tệ → POSNEG_tệ'),
+    ('chẳng dở', 4, 1, 'chẳng_dở → POSNEG_dở'),
+    ('chưa tệ lắm', 4, 1, 'chưa_tệ → POSNEG_tệ'),
+]
+
+# Negative negations (không + positive word = negative sentiment)
+# These should create NEGNEG_xxx tokens
+# Include TEENCODE VARIANTS as well
+neg_pos_examples = [
+    # Standard form
+    ('không tốt', 2, 0, 'không_tốt → NEGNEG_tốt'),
+    ('không hay', 2, 0, 'không_hay → NEGNEG_hay'),
+    ('không ổn', 1, 0, 'không_ổn → NEGNEG_ổn'),
+    ('không được', 2, 0, 'không_được → NEGNEG_được'),
+    ('không mượt', 2, 0, 'không_mượt → NEGNEG_mượt'),
+    ('không nhanh', 1, 0, 'không_nhanh → NEGNEG_nhanh'),
+    ('app không tốt', 2, 0, 'không_tốt → NEGNEG_tốt'),
+    ('giao diện không đẹp', 2, 0, 'không_đẹp → NEGNEG_đẹp'),
+    
+    # Teencode variants: k, ko, kg
+    ('k tốt', 2, 0, 'k_tốt → NEGNEG_tốt'),
+    ('ko hay', 2, 0, 'ko_hay → NEGNEG_hay'),
+    ('kg ổn', 1, 0, 'kg_ổn → NEGNEG_ổn'),
+    ('k được', 2, 0, 'k_được → NEGNEG_được'),
+    ('app ko mượt', 2, 0, 'ko_mượt → NEGNEG_mượt'),
+    ('k nhanh', 1, 0, 'k_nhanh → NEGNEG_nhanh'),
+    
+    # Teencode variants: hok, hong, hem
+    ('hok tốt', 2, 0, 'hok_tốt → NEGNEG_tốt'),
+    ('hong hay', 2, 0, 'hong_hay → NEGNEG_hay'),
+    ('hem ổn', 1, 0, 'hem_ổn → NEGNEG_ổn'),
+    ('hok đẹp', 2, 0, 'hok_đẹp → NEGNEG_đẹp'),
+    
+    # Teencode variants: chả, chẳng, chưa
+    ('chả tốt', 2, 0, 'chả_tốt → NEGNEG_tốt'),
+    ('chẳng hay', 2, 0, 'chẳng_hay → NEGNEG_hay'),
+    ('chưa tốt', 2, 0, 'chưa_tốt → NEGNEG_tốt'),
+]
+
+# Replicate each example 30 times to ensure min_df threshold is met
+print(f"   • Creating synthetic examples...")
+for content, score, label, note in pos_neg_examples + neg_pos_examples:
+    for i in range(30):
+        # Clean and process like real data
+        content_cleaned = cleaner.clean_text(content)
+        content_segmented = word_tokenize(content_cleaned, format="text")
+        
+        synthetic_negations.append({
+            'content': content,
+            'score': score,
+            'sentiment': 'positive' if label == 1 else 'negative',
+            'sentiment_vi': 'tích cực' if label == 1 else 'tiêu cực',
+            'sentiment_label': label,
+            'content_cleaned': content_cleaned,
+            'content_segmented': content_segmented,
+            'appId': 'synthetic_negation',
+            'bank_name': 'Synthetic',
+            'should_relabel': False,
+            'new_sentiment': None,
+            'relabel_confidence': 0.0,
+            'relabel_reason': 'Synthetic data for negation learning'
+        })
+
+# Add to dataset
+df_synthetic = pd.DataFrame(synthetic_negations)
+df_cleaned = pd.concat([df_cleaned, df_synthetic], ignore_index=True)
+
+print(f"✅ Added {len(synthetic_negations):,} synthetic negation examples")
+print(f"   • Positive negations (POSNEG): {len(pos_neg_examples) * 30:,}")
+print(f"   • Negative negations (NEGNEG): {len(neg_pos_examples) * 30:,}")
+print(f"   • Total dataset: {len(df_cleaned):,} reviews\n")
+
+# Display sample processed tokens
+print("📝 SAMPLE PROCESSED NEGATION TOKENS:")
+for i, (content, _, _, note) in enumerate(pos_neg_examples[:3] + neg_pos_examples[:3]):
+    content_cleaned = cleaner.clean_text(content)
+    content_segmented = word_tokenize(content_cleaned, format="text")
+    sentiment_type = "Tích cực 😊" if i < 3 else "Tiêu cực 😞"
+    print(f"   {i+1}. '{content}' → '{content_segmented}' ({sentiment_type})")
+print()
 
 # ========================================
 # 10. ADVANCED FEATURE ENGINEERING
@@ -932,16 +1206,24 @@ print("="*80)
 print("BƯỚC 9: ENSEMBLE LEARNING (VOTING CLASSIFIER)")
 print("="*80 + "\n")
 
-# Select top 3 models
+# Select top 3 models that support predict_proba for soft voting
 comparison_df = pd.DataFrame(results).T
-top3_models = comparison_df.nlargest(3, 'F1-Score').index.tolist()
 
-print(f"🏆 Top 3 models: {top3_models}\n")
+# Filter models that have predict_proba (exclude SVM/LinearSVC)
+models_with_proba = [
+    name for name in comparison_df.index 
+    if hasattr(trained_models[name], 'predict_proba')
+]
 
-# Create Voting Classifier
+# Get top 3 from models that support predict_proba
+top3_models = comparison_df.loc[models_with_proba].nlargest(3, 'F1-Score').index.tolist()
+
+print(f"🏆 Top 3 models (với predict_proba support): {top3_models}\n")
+
+# Create Voting Classifier with SOFT voting (guaranteed predict_proba support)
 voting_clf = VotingClassifier(
     estimators=[(name, trained_models[name]) for name in top3_models],
-    voting='soft' if all(hasattr(trained_models[m], 'predict_proba') for m in top3_models) else 'hard'
+    voting='soft'  # Always soft voting since we filtered models with predict_proba
 )
 
 print("🔧 Training Voting Classifier...")
@@ -1146,13 +1428,16 @@ metadata = {
     'train_samples': X_train_resampled.shape[0],  # Use .shape[0] for sparse matrix
     'test_samples': X_test_combined.shape[0],  # Use .shape[0] for sparse matrix
     'used_smote': imbalance_ratio > 1.5,
-    'strategy': 'rollback_and_finetune',
+    'strategy': 'content_based_sentiment_relabeling',
     'optimizations': [
         'Advanced text cleaning (150+ teencode)',
+        'CONTENT-BASED sentiment re-labeling (ưu tiên nội dung over score)',
+        'Smart conflict detection (score vs content)',
+        'Multi-level confidence scoring (75-90%)',
         'Negation handling (POSNEG/NEGNEG)',
         'Unicode normalization (NFC)',
-        'Trigram TF-IDF (4000 word features) - RESTORED',
-        'Char-level TF-IDF (1500 features) - RESTORED',
+        'Trigram TF-IDF (4000 word features)',
+        'Char-level TF-IDF (1500 features)',
         'Total 5500 features (moderate approach)',
         'SMOTE oversampling (k_neighbors=5)',
         'INTENSIVE Logistic Regression tuning (32 combinations)',
@@ -1192,12 +1477,15 @@ print(f"""
    • Best Accuracy: {results[best_model_name]['Accuracy']:.4f}
    • ROC-AUC: {results[best_model_name]['ROC-AUC']:.4f}
 
-✨ CẢI TIẾN (ROLLBACK + FINE-TUNE STRATEGY):
+✨ CẢI TIẾN (CONTENT-BASED SENTIMENT RE-LABELING):
    ✅ 150+ teencode words (vs 50 base)
+   ✅ CONTENT-BASED re-labeling (ưu tiên nội dung bình luận)
+   ✅ Smart conflict resolution (score vs content)
+   ✅ Multi-level confidence (75-90%)
    ✅ Negation handling (không tệ → tích cực)
    ✅ Unicode normalization (NFC)
-   ✅ Trigram TF-IDF (4000 word features) - RESTORED
-   ✅ Char-level TF-IDF (1500 features) - RESTORED
+   ✅ Trigram TF-IDF (4000 word features)
+   ✅ Char-level TF-IDF (1500 features)
    ✅ Total 5500 features (moderate, balanced)
    ✅ SMOTE oversampling (k_neighbors=5)
    ✅ INTENSIVE Logistic Regression tuning (32 params)

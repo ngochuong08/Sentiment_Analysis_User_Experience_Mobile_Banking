@@ -136,10 +136,13 @@ class AdvancedVietnameseReviewCleaner:
             'k': 'không', 'ko': 'không', 'hok': 'không', 'hong': 'không',
             'hem': 'không', 'kg': 'không', 'kh': 'không', 'khong': 'không',
             'hông': 'không', 'kô': 'không', 'hỏng': 'không',
+            'khôg': 'không', 'chả': 'chẳng', 'chăng': 'chẳng',
+            'chẵng': 'chẳng',
             
             # Được
             'dc': 'được', 'đc': 'được', 'dk': 'được', 'đk': 'được',
             'duoc': 'được', 'đươc': 'được',
+            'dược': 'được',
             
             # Với, vậy, vì
             'vs': 'với', 'vc': 'với', 'v': 'với',
@@ -151,15 +154,20 @@ class AdvancedVietnameseReviewCleaner:
             'tui': 'tôi', 'toy': 'tôi', 'toj': 'tôi', 'tớ': 'tôi',
             't': 'tôi', 'mik': 'mình',
             
+            
             # Bình thường, như thế nào
             'bt': 'bình thường', 'bth': 'bình thường',
             'ntn': 'như thế nào', 'sao': 'như thế nào',
             'nthna': 'như thế nào',
+            'nhma': 'nhưng mà',
+            'nma': 'nhưng mà',
             
             # Rồi, nhé
             'r': 'rồi', 'rùi': 'rồi', 'rui': 'rồi', 'ròi': 'rồi',
             'ak': 'à', 'ạk': 'ạ', 'nhaa': 'nhé', 'nha': 'nhé',
             'nek': 'nè', 'né': 'nè',
+            'òi': 'rồi',
+            'oy': 'rồi',
             
             # Cũng, biết
             'cx': 'cũng', 'cug': 'cũng',
@@ -188,6 +196,7 @@ class AdvancedVietnameseReviewCleaner:
             # Ừ, ok
             'uk': 'ừ', 'uh': 'ừ', 'ừm': 'ừ',
             'oke': 'ok', 'okie': 'ok', 'okee': 'ok', 'okey': 'ok',
+            'okela':'ok',
             
             # Đang, làm
             'đag': 'đang', 'dg': 'đang', 'dang': 'đang',
@@ -303,14 +312,14 @@ class AdvancedVietnameseReviewCleaner:
             'dở dở ương ương', 'đơ đơ', 'lag lag', 'giật giật',
             'chập chờn', 'điên', 'phí phạm', 'phí thời gian',
             'lằng nhằng', 'rối rắm', 'lộn xộn', 'hỏng', 'đóng băng',
-            'đơ máy', 'đơ ứng dụng', 'đơ app',
+            'đơ máy', 'đơ ứng dụng', 'đơ app', 'đứng hình','bị đơ',
             'không load được', 'không đăng nhập được', 'không mở được',
             'không sử dụng được', 'không vào được',
             'mất kết nối', 'mất mạng', 'mất tín hiệu',
             'sập nguồn', 'sập máy', 'sập app', 
             'sập ứng dụng', 'treo máy', 'treo app', 'treo ứng dụng',
             'chậm kinh khủng', 'chậm kinh', 'chậm vãi',
-            'bất tiện',
+            'bất tiện', 'rối mắt',
         }
         
         # Positive words that become negative with negation
@@ -351,8 +360,8 @@ class AdvancedVietnameseReviewCleaner:
     def handle_negation(self, text: str) -> str:
         """
         Xử lý phủ định trong tiếng Việt
-        VD: "không tệ" -> "không_tệ" (tích cực)
-            "không tốt" -> "không_tốt" (tiêu cực)
+        VD: "không tệ" -> "POSNEG_tệ" (tích cực)
+            "không tốt" -> "NEGNEG_tốt" (tiêu cực)
         """
         words = text.split()
         result = []
@@ -506,22 +515,27 @@ def predict_sentiment(text, model, tfidf_word, tfidf_char):
     prediction = model.predict(text_vectorized)[0]
     
     # Bước 5: Lấy probability (nếu model hỗ trợ)
+    has_real_confidence = False
     try:
         proba = model.predict_proba(text_vectorized)[0]
         confidence = max(proba) * 100
-    except:
-        confidence = None
+        has_real_confidence = True
+    except Exception as e:
+        # Fallback: Use default confidence
+        # This happens when model doesn't support predict_proba (e.g., LinearSVC, hard voting)
+        confidence = 75.0  # Default moderate confidence
+        has_real_confidence = False
     
     sentiment = "Tích cực 😊" if prediction == 1 else "Tiêu cực 😞"
     
-    # Return debug info
+    # Return debug info + confidence type flag
+    return sentiment, confidence, text_cleaned, text_segmented, has_real_confidence
     return sentiment, confidence, text_cleaned, text_segmented
 
 # ========================================
 # HEADER
 # ========================================
-st.title("🏦 PHÂN TÍCH CẢM XÚC NGƯỜI DÙNG ỨNG DỤNG NGÂN HÀNG DI ĐỘNG")
-st.markdown("### 📊 Sentiment Analysis Dashboard for Mobile Banking Applications")
+st.title("📊 Sentiment Analysis Dashboard for Mobile Banking Applications")
 st.markdown("---")
 
 # ========================================
@@ -957,7 +971,7 @@ if df is not None:
             
             if predict_button and user_input:
                 with st.spinner('Đang phân tích...'):
-                    sentiment, confidence, text_cleaned, text_segmented = predict_sentiment(user_input, model, tfidf_word, tfidf_char)
+                    sentiment, confidence, text_cleaned, text_segmented, has_real_confidence = predict_sentiment(user_input, model, tfidf_word, tfidf_char)
                     
                     if sentiment:
                         st.markdown("---")
@@ -984,38 +998,103 @@ if df is not None:
                                 """, unsafe_allow_html=True)
                         
                         with col2:
-                            if confidence:
-                                st.metric("🎯 Độ tin cậy", f"{confidence:.2f}%")
-                                
-                                # Gauge chart
-                                fig = go.Figure(go.Indicator(
-                                    mode="gauge+number",
-                                    value=confidence,
-                                    domain={'x': [0, 1], 'y': [0, 1]},
-                                    title={'text': "Confidence Score"},
-                                    gauge={
-                                        'axis': {'range': [None, 100]},
-                                        'bar': {'color': "#10b981" if "Tích cực" in sentiment else "#ef4444"},
-                                        'steps': [
-                                            {'range': [0, 50], 'color': "#fee2e2"},
-                                            {'range': [50, 75], 'color': "#fef3c7"},
-                                            {'range': [75, 100], 'color': "#d1fae5"}
-                                        ],
-                                        'threshold': {
-                                            'line': {'color': "red", 'width': 4},
-                                            'thickness': 0.75,
-                                            'value': 90
-                                        }
+                            # Always show confidence (use default if None)
+                            display_confidence = confidence if confidence is not None else 75.0
+                            st.metric("🎯 Độ tin cậy", f"{display_confidence:.2f}%")
+                            
+                            # Gauge chart
+                            fig = go.Figure(go.Indicator(
+                                mode="gauge+number",
+                                value=display_confidence,
+                                domain={'x': [0, 1], 'y': [0, 1]},
+                                title={'text': "Confidence Score"},
+                                gauge={
+                                    'axis': {'range': [None, 100]},
+                                    'bar': {'color': "#10b981" if "Tích cực" in sentiment else "#ef4444"},
+                                    'steps': [
+                                        {'range': [0, 50], 'color': "#fee2e2"},
+                                        {'range': [50, 75], 'color': "#fef3c7"},
+                                        {'range': [75, 100], 'color': "#d1fae5"}
+                                    ],
+                                    'threshold': {
+                                        'line': {'color': "red", 'width': 4},
+                                        'thickness': 0.75,
+                                        'value': 90
                                     }
-                                ))
-                                
-                                fig.update_layout(height=300)
-                                st.plotly_chart(fig, use_container_width=True)
+                                }
+                            ))
+                            
+                            fig.update_layout(height=300)
+                            st.plotly_chart(fig, use_container_width=True)
+                            
+                            # Show confidence type
+                            if not has_real_confidence:
+                                st.caption("⚠️ Model không hỗ trợ predict_proba. Hiển thị độ tin cậy mặc định (75%).")
+                            else:
+                                st.caption("✅ Độ tin cậy được tính từ model predict_proba.")
                         
                         # Hiển thị text đã xử lý (DEBUG)
-                        st.markdown("### 🔍 Text đã xử lý")
-                        st.info(f"**Sau clean_text():** {text_cleaned}")
-                        st.info(f"**Sau word_tokenize():** {text_segmented}")
+                        st.markdown("### 🔍 Chi tiết xử lý text")
+                        
+                        col_debug1, col_debug2 = st.columns(2)
+                        
+                        with col_debug1:
+                            st.info(f"❓ **Text gốc:**\n```\n{user_input}\n```")
+                            st.info(f"🧹 **Sau clean_text():**\n```\n{text_cleaned}\n```")
+                        
+                        with col_debug2:
+                            st.info(f"🔤 **Sau word_tokenize():**\n```\n{text_segmented}\n```")
+                            
+                            # Check for negation tokens
+                            if 'POSNEG_' in text_segmented or 'NEGNEG_' in text_segmented:
+                                st.success("✅ **Đã xử lý phủ định!**")
+                                if 'POSNEG_' in text_segmented:
+                                    st.markdown("🟢 **POSNEG** token = Phủ định từ tiêu cực → Tích cực")
+                                if 'NEGNEG_' in text_segmented:
+                                    st.markdown("🔴 **NEGNEG** token = Phủ định từ tích cực → Tiêu cực")
+                            else:
+                                st.warning("⚠️ Không có token phủ định nào")
+                        
+                        # Check if model was trained with negation
+                        if metadata:
+                            if any('POSNEG' in opt or 'NEGNEG' in opt or 'Negation' in opt for opt in metadata.get('optimizations', [])):
+                                st.info("✅ Model đã được train với negation handling")
+                            else:
+                                st.error("⚠️ Model chưa được train với negation handling! Vui lòng retrain model trên Kaggle.")
+                        
+                        # 🔥 DEBUG: Check TF-IDF vocabulary
+                        st.markdown("### 🔬 Debug TF-IDF Vocabulary")
+                        tokens_in_text = text_segmented.split()
+                        vocab_word = tfidf_word.vocabulary_ if hasattr(tfidf_word, 'vocabulary_') else {}
+                        vocab_char = tfidf_char.vocabulary_ if hasattr(tfidf_char, 'vocabulary_') else {}
+
+                        col_vocab1, col_vocab2 = st.columns(2)
+                        with col_vocab1:
+                            st.markdown("**🔤 Tokens trong text:**")
+                            for token in tokens_in_text[:10]:
+                                in_word_vocab = token in vocab_word
+                                in_char_vocab = any(token[i:i+n] in vocab_char for n in range(2, 5) for i in range(len(token)-n+1))
+                                
+                                if in_word_vocab:
+                                    st.success(f"✅ `{token}` → Word vocab")
+                                elif in_char_vocab:
+                                    st.warning(f"⚠️ `{token}` → Chỉ char vocab")
+                                else:
+                                    st.error(f"❌ `{token}` → KHÔNG có!")
+
+                        with col_vocab2:
+                            st.markdown("**📊 Feature Vector:**")
+                            from scipy.sparse import hstack
+                            text_word_vec = tfidf_word.transform([text_segmented])
+                            text_char_vec = tfidf_char.transform([text_segmented])
+                            text_combined = hstack([text_word_vec, text_char_vec])
+                            
+                            st.info(f"Word: {text_word_vec.nnz} non-zero")
+                            st.info(f"Char: {text_char_vec.nnz} non-zero")
+                            st.info(f"Total: {text_combined.nnz} features")
+                            
+                            if text_combined.nnz == 0:
+                                st.error("⚠️ Vector rỗng! Model không nhận được gì!")
             
             elif predict_button and not user_input:
                 st.warning("⚠️ Vui lòng nhập nội dung review!")
