@@ -541,7 +541,7 @@ st.markdown("---")
 # ========================================
 # SIDEBAR
 # ========================================
-st.sidebar.title("⚙️ Cài đặt")
+st.sidebar.title("📊 Dashboard Info")
 st.sidebar.markdown("---")
 
 # Load dữ liệu
@@ -555,43 +555,18 @@ if df is not None:
     if 'bank_name' not in df.columns and 'appId' in df.columns:
         df['bank_name'] = df['appId'].map(APP_NAMES)
     
-    # Sidebar filters
-    st.sidebar.subheader("🔍 Bộ lọc dữ liệu")
+    st.sidebar.info(f"📝 Tổng số reviews: **{len(df):,}**")
+    st.sidebar.success(f"🏦 Số ngân hàng: **{df['bank_name'].nunique()}**")
     
-    # Filter theo ngân hàng
-    banks = ['Tất cả'] + sorted(df['bank_name'].dropna().unique().tolist())
-    selected_bank = st.sidebar.selectbox("Chọn ngân hàng:", banks)
+    if metadata:
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### 🤖 Model Info")
+        st.sidebar.write(f"**Model:** {metadata.get('model_name', 'N/A')}")
+        st.sidebar.write(f"**F1-Score:** {metadata.get('f1_score', 0):.4f}")
+        st.sidebar.write(f"**Accuracy:** {metadata.get('accuracy', 0):.4f}")
     
-    # Filter theo sentiment
-    sentiments = ['Tất cả', 'Tích cực', 'Tiêu cực']
-    selected_sentiment = st.sidebar.selectbox("Chọn cảm xúc:", sentiments)
-    
-    # Filter theo rating
-    min_rating, max_rating = st.sidebar.slider(
-        "Chọn khoảng rating:",
-        min_value=1,
-        max_value=5,
-        value=(1, 5)
-    )
-    
-    # Áp dụng filter
+    # Default: no filter
     df_filtered = df.copy()
-    
-    if selected_bank != 'Tất cả':
-        df_filtered = df_filtered[df_filtered['bank_name'] == selected_bank]
-    
-    if selected_sentiment == 'Tích cực':
-        df_filtered = df_filtered[df_filtered['sentiment'] == 'positive']
-    elif selected_sentiment == 'Tiêu cực':
-        df_filtered = df_filtered[df_filtered['sentiment'] == 'negative']
-    
-    df_filtered = df_filtered[
-        (df_filtered['score'] >= min_rating) & 
-        (df_filtered['score'] <= max_rating)
-    ]
-    
-    st.sidebar.markdown("---")
-    st.sidebar.info(f"📝 Hiển thị {len(df_filtered):,} / {len(df):,} reviews")
     
     # ========================================
     # TAB NAVIGATION
@@ -609,6 +584,52 @@ if df is not None:
     # ========================================
     with tab1:
         st.header("📊 Tổng quan dữ liệu")
+        
+        # ⚙️ Settings Panel
+        with st.expander("⚙️ Cài đặt bộ lọc", expanded=False):
+            st.markdown("### 🔍 Bộ lọc dữ liệu")
+            
+            col_filter1, col_filter2, col_filter3 = st.columns(3)
+            
+            with col_filter1:
+                # Filter theo ngân hàng
+                banks = ['Tất cả'] + sorted(df['bank_name'].dropna().unique().tolist())
+                selected_bank = st.selectbox("🏦 Chọn ngân hàng:", banks, key="tab1_bank")
+            
+            with col_filter2:
+                # Filter theo sentiment
+                sentiments = ['Tất cả', 'Tích cực', 'Tiêu cực']
+                selected_sentiment = st.selectbox("😊 Chọn cảm xúc:", sentiments, key="tab1_sentiment")
+            
+            with col_filter3:
+                # Filter theo rating
+                min_rating, max_rating = st.slider(
+                    "⭐ Chọn khoảng rating:",
+                    min_value=1,
+                    max_value=5,
+                    value=(1, 5),
+                    key="tab1_rating"
+                )
+            
+            # Áp dụng filter
+            df_filtered = df.copy()
+            
+            if selected_bank != 'Tất cả':
+                df_filtered = df_filtered[df_filtered['bank_name'] == selected_bank]
+            
+            if selected_sentiment == 'Tích cực':
+                df_filtered = df_filtered[df_filtered['sentiment'] == 'positive']
+            elif selected_sentiment == 'Tiêu cực':
+                df_filtered = df_filtered[df_filtered['sentiment'] == 'negative']
+            
+            df_filtered = df_filtered[
+                (df_filtered['score'] >= min_rating) & 
+                (df_filtered['score'] <= max_rating)
+            ]
+            
+            st.info(f"📝 Đang hiển thị **{len(df_filtered):,}** / **{len(df):,}** reviews")
+        
+        st.markdown("---")
         
         # Metrics
         col1, col2, col3, col4 = st.columns(4)
@@ -702,7 +723,7 @@ if df is not None:
             
             fig.add_trace(go.Scatter(
                 x=time_sentiment.index,
-                y=time_sentiment.get('positive', 0),
+                y=time_sentiment['positive'] if 'positive' in time_sentiment.columns else [0] * len(time_sentiment.index),
                 name='Tích cực',
                 mode='lines+markers',
                 line=dict(color='#10b981', width=3),
@@ -711,7 +732,7 @@ if df is not None:
             
             fig.add_trace(go.Scatter(
                 x=time_sentiment.index,
-                y=time_sentiment.get('negative', 0),
+                y=time_sentiment['negative'] if 'negative' in time_sentiment.columns else [0] * len(time_sentiment.index),
                 name='Tiêu cực',
                 mode='lines+markers',
                 line=dict(color='#ef4444', width=3),
@@ -791,7 +812,7 @@ if df is not None:
                 title_font=dict(size=18, color='#1e40af'),
                 xaxis_title="% Tích cực",
                 yaxis_title="Ngân hàng",
-                height=500,
+                height=700,
                 xaxis=dict(range=[0, 110])
             )
             
@@ -1121,11 +1142,57 @@ if df is not None:
     with tab5:
         st.header("📝 Dữ liệu Reviews chi tiết")
         
+        # ⚙️ Settings Panel
+        with st.expander("⚙️ Cài đặt bộ lọc", expanded=True):
+            st.markdown("### 🔍 Bộ lọc dữ liệu")
+            
+            col_filter1, col_filter2, col_filter3 = st.columns(3)
+            
+            with col_filter1:
+                # Filter theo ngân hàng
+                banks = ['Tất cả'] + sorted(df['bank_name'].dropna().unique().tolist())
+                selected_bank_tab5 = st.selectbox("🏦 Chọn ngân hàng:", banks, key="tab5_bank")
+            
+            with col_filter2:
+                # Filter theo sentiment
+                sentiments = ['Tất cả', 'Tích cực', 'Tiêu cực']
+                selected_sentiment_tab5 = st.selectbox("😊 Chọn cảm xúc:", sentiments, key="tab5_sentiment")
+            
+            with col_filter3:
+                # Filter theo rating
+                min_rating_tab5, max_rating_tab5 = st.slider(
+                    "⭐ Chọn khoảng rating:",
+                    min_value=1,
+                    max_value=5,
+                    value=(1, 5),
+                    key="tab5_rating"
+                )
+            
+            # Áp dụng filter cho tab 5
+            df_filtered_tab5 = df.copy()
+            
+            if selected_bank_tab5 != 'Tất cả':
+                df_filtered_tab5 = df_filtered_tab5[df_filtered_tab5['bank_name'] == selected_bank_tab5]
+            
+            if selected_sentiment_tab5 == 'Tích cực':
+                df_filtered_tab5 = df_filtered_tab5[df_filtered_tab5['sentiment'] == 'positive']
+            elif selected_sentiment_tab5 == 'Tiêu cực':
+                df_filtered_tab5 = df_filtered_tab5[df_filtered_tab5['sentiment'] == 'negative']
+            
+            df_filtered_tab5 = df_filtered_tab5[
+                (df_filtered_tab5['score'] >= min_rating_tab5) & 
+                (df_filtered_tab5['score'] <= max_rating_tab5)
+            ]
+            
+            st.info(f"📝 Đang hiển thị **{len(df_filtered_tab5):,}** / **{len(df):,}** reviews")
+        
+        st.markdown("---")
+        
         # Thống kê
-        st.markdown(f"### Hiển thị {len(df_filtered):,} reviews")
+        st.markdown(f"### Hiển thị {len(df_filtered_tab5):,} reviews")
         
         # Chọn cột hiển thị
-        available_columns = df_filtered.columns.tolist()
+        available_columns = df_filtered_tab5.columns.tolist()
         default_columns = ['bank_name', 'content', 'score', 'sentiment_vi', 'at']
         default_columns = [col for col in default_columns if col in available_columns]
         
@@ -1137,7 +1204,7 @@ if df is not None:
         
         if selected_columns:
             # Hiển thị dataframe
-            display_df = df_filtered[selected_columns].copy()
+            display_df = df_filtered_tab5[selected_columns].copy()
             
             # Format datetime
             if 'at' in display_df.columns:
@@ -1150,7 +1217,7 @@ if df is not None:
             )
             
             # Download button
-            csv = df_filtered[selected_columns].to_csv(index=False, encoding='utf-8-sig')
+            csv = df_filtered_tab5[selected_columns].to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
                 label="📥 Tải xuống dữ liệu (CSV)",
                 data=csv,
@@ -1168,14 +1235,14 @@ if df is not None:
         
         with col1:
             st.markdown("**😊 Top 5 Reviews Tích Cực (Rating cao nhất)**")
-            top_positive = df_filtered[df_filtered['sentiment'] == 'positive'].nlargest(5, 'score')
+            top_positive = df_filtered_tab5[df_filtered_tab5['sentiment'] == 'positive'].nlargest(5, 'score')
             for idx, row in top_positive.iterrows():
                 with st.expander(f"⭐ {row['score']} - {row.get('bank_name', 'N/A')}"):
                     st.write(row.get('content', 'N/A')[:300] + "...")
         
         with col2:
             st.markdown("**😞 Top 5 Reviews Tiêu Cực (Rating thấp nhất)**")
-            top_negative = df_filtered[df_filtered['sentiment'] == 'negative'].nsmallest(5, 'score')
+            top_negative = df_filtered_tab5[df_filtered_tab5['sentiment'] == 'negative'].nsmallest(5, 'score')
             for idx, row in top_negative.iterrows():
                 with st.expander(f"⭐ {row['score']} - {row.get('bank_name', 'N/A')}"):
                     st.write(row.get('content', 'N/A')[:300] + "...")
