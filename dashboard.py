@@ -2499,22 +2499,34 @@ if df is not None:
         col1, col2 = st.columns(2)
 
         with col1:
-            st.markdown("**😊 Top 5 Reviews Tích Cực (Rating cao nhất)**")
-            top_positive = df_filtered[df_filtered["sentiment"] == "positive"].nlargest(
-                5, "score"
-            )
+            st.markdown("**😊 Top 5 Reviews Tích Cực (đa dạng ngân hàng)**")
+            pos_pool = df_filtered[df_filtered["sentiment"] == "positive"]
+            if len(pos_pool) > 5:
+                top_positive = pos_pool.sample(n=5, random_state=42)
+            else:
+                top_positive = pos_pool
             for idx, row in top_positive.iterrows():
-                with st.expander(f"⭐ {row['score']} - {row.get('bank_name', 'N/A')}"):
-                    st.write(row.get("content", "N/A")[:300] + "...")
+                content = str(row.get("content", ""))
+                if content in ("nan", "None", ""):
+                    content = "(Không có nội dung)"
+                bank = row.get("bank_name", "N/A")
+                with st.expander(f"⭐ {row['score']} - {bank} | {content[:60]}..."):
+                    st.write(content[:500])
 
         with col2:
-            st.markdown("**😞 Top 5 Reviews Tiêu Cực (Rating thấp nhất)**")
-            top_negative = df_filtered[
-                df_filtered["sentiment"] == "negative"
-            ].nsmallest(5, "score")
+            st.markdown("**😞 Top 5 Reviews Tiêu Cực (đa dạng ngân hàng)**")
+            neg_pool = df_filtered[df_filtered["sentiment"] == "negative"]
+            if len(neg_pool) > 5:
+                top_negative = neg_pool.sample(n=5, random_state=42)
+            else:
+                top_negative = neg_pool
             for idx, row in top_negative.iterrows():
-                with st.expander(f"⭐ {row['score']} - {row.get('bank_name', 'N/A')}"):
-                    st.write(row.get("content", "N/A")[:300] + "...")
+                content = str(row.get("content", ""))
+                if content in ("nan", "None", ""):
+                    content = "(Không có nội dung)"
+                bank = row.get("bank_name", "N/A")
+                with st.expander(f"⭐ {row['score']} - {bank} | {content[:60]}..."):
+                    st.write(content[:500])
 
 else:
     st.error(
