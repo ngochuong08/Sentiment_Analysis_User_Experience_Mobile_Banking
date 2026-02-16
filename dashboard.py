@@ -1780,10 +1780,10 @@ if df is not None:
 
                 fig_dual.update_layout(
                     height=600,
-                    title_font=dict(size=16, color="#1e40af"),
+                    title_text="",
                     hovermode="x unified",
                     showlegend=True,
-                    legend=dict(x=0, y=1.15, orientation="h"),
+                    legend=dict(x=0, y=1.12, orientation="h"),
                 )
                 fig_dual.update_yaxes(title_text="Giá (VNĐ)", row=1, col=1)
                 fig_dual.update_yaxes(title_text="Rating / %", row=2, col=1)
