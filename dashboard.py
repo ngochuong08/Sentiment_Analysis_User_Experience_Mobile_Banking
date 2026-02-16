@@ -81,6 +81,22 @@ def load_data():
 
 
 @st.cache_data
+def load_topic_data():
+    """Load dữ liệu reviews đã phân loại chủ đề (pre-computed)"""
+    try:
+        df = pd.read_csv("./output/reviews_with_topics.csv")
+        # Parse topic_all from pipe-separated string back to list
+        df["topic_all"] = (
+            df["topic_all"]
+            .fillna("Khác")
+            .apply(lambda x: x.split("|") if isinstance(x, str) else ["Khác"])
+        )
+        return df
+    except FileNotFoundError:
+        return None
+
+
+@st.cache_data
 def load_bank_stats():
     """Load thống kê theo ngân hàng"""
     try:
@@ -810,7 +826,7 @@ st.markdown("---")
 # ========================================
 # SIDEBAR
 # ========================================
-st.sidebar.title("⚙️ Cài đặt")
+st.sidebar.title("📊 Dashboard Info")
 st.sidebar.markdown("---")
 
 # Load dữ liệu
@@ -1121,25 +1137,38 @@ if df is not None:
         """
         )
 
-        # --- Initialize topic categorizer ---
+        # --- Initialize topic categorizer (for colors/icons only) ---
         topic_categorizer = BankingTopicCategorizer()
 
-        # Apply topic categorization on the filtered data
-        df_topics = df_filtered.copy()
-        text_col = (
-            "content_cleaned" if "content_cleaned" in df_topics.columns else "content"
-        )
-        df_topics["topic_all"] = df_topics[text_col].apply(
-            topic_categorizer.categorize_single
-        )
-        df_topics["topic_primary"] = df_topics["topic_all"].apply(
-            lambda x: x[0] if x else "Khác"
-        )
-        # Use score-based primary for better accuracy
-        df_topics["topic_primary"] = df_topics[text_col].apply(
-            topic_categorizer.categorize_primary
-        )
-        df_topics["topic_count"] = df_topics["topic_all"].apply(len)
+        # --- Load pre-computed topic data (fast!) ---
+        df_topic_full = load_topic_data()
+
+        if df_topic_full is not None:
+            # Merge pre-computed topics into filtered data via reviewId
+            topic_cols = ["reviewId", "topic_all", "topic_primary", "topic_count"]
+            df_topics = df_filtered.merge(
+                df_topic_full[topic_cols], on="reviewId", how="left"
+            )
+            df_topics["topic_primary"] = df_topics["topic_primary"].fillna("Khác")
+            df_topics["topic_all"] = df_topics["topic_all"].apply(
+                lambda x: x if isinstance(x, list) else ["Khác"]
+            )
+            df_topics["topic_count"] = df_topics["topic_all"].apply(len)
+        else:
+            # Fallback: compute on-the-fly (slower)
+            df_topics = df_filtered.copy()
+            text_col = (
+                "content_cleaned"
+                if "content_cleaned" in df_topics.columns
+                else "content"
+            )
+            df_topics["topic_all"] = df_topics[text_col].apply(
+                topic_categorizer.categorize_single
+            )
+            df_topics["topic_primary"] = df_topics[text_col].apply(
+                topic_categorizer.categorize_primary
+            )
+            df_topics["topic_count"] = df_topics["topic_all"].apply(len)
 
         # --- METRICS ROW ---
         st.markdown("### 📊 Tổng quan chủ đề")
@@ -1567,29 +1596,47 @@ if df is not None:
         topic_detail_df = df_topics[df_topics["topic_primary"] == selected_topic_detail]
 
         if len(topic_detail_df) > 0:
+            st.caption(
+                f"Tìm thấy **{len(topic_detail_df):,}** reviews thuộc chủ đề này"
+            )
+
             col_td1, col_td2 = st.columns(2)
 
             with col_td1:
                 st.markdown("**😊 Reviews tích cực:**")
-                pos_samples = topic_detail_df[
-                    topic_detail_df["sentiment"] == "positive"
-                ].head(5)
+                pos_pool = topic_detail_df[topic_detail_df["sentiment"] == "positive"]
+                if len(pos_pool) > 5:
+                    pos_samples = pos_pool.sample(n=5, random_state=42)
+                else:
+                    pos_samples = pos_pool
                 for _, row in pos_samples.iterrows():
-                    with st.expander(
-                        f"⭐ {row['score']} - {row.get('bank_name', 'N/A')}"
-                    ):
-                        st.write(str(row.get("content", "N/A"))[:300])
+                    bank = row.get("bank_name", "N/A")
+                    score = row.get("score", "?")
+                    content = str(row.get("content", ""))
+                    if content in ("nan", "None", ""):
+                        content = "(Không có nội dung)"
+                    with st.expander(f"⭐ {score} - {bank} | {content[:60]}..."):
+                        st.write(content[:500])
+                if len(pos_pool) == 0:
+                    st.info("Không có reviews tích cực cho chủ đề này")
 
             with col_td2:
                 st.markdown("**😞 Reviews tiêu cực:**")
-                neg_samples = topic_detail_df[
-                    topic_detail_df["sentiment"] == "negative"
-                ].head(5)
+                neg_pool = topic_detail_df[topic_detail_df["sentiment"] == "negative"]
+                if len(neg_pool) > 5:
+                    neg_samples = neg_pool.sample(n=5, random_state=42)
+                else:
+                    neg_samples = neg_pool
                 for _, row in neg_samples.iterrows():
-                    with st.expander(
-                        f"⭐ {row['score']} - {row.get('bank_name', 'N/A')}"
-                    ):
-                        st.write(str(row.get("content", "N/A"))[:300])
+                    bank = row.get("bank_name", "N/A")
+                    score = row.get("score", "?")
+                    content = str(row.get("content", ""))
+                    if content in ("nan", "None", ""):
+                        content = "(Không có nội dung)"
+                    with st.expander(f"⭐ {score} - {bank} | {content[:60]}..."):
+                        st.write(content[:500])
+                if len(neg_pool) == 0:
+                    st.info("Không có reviews tiêu cực cho chủ đề này")
         else:
             st.info(f"Không có reviews nào thuộc chủ đề '{selected_topic_detail}'")
 
