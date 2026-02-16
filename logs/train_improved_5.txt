@@ -235,7 +235,7 @@ BƯỚC 12: PHÂN TÍCH THEO NGÂN HÀNG
 
 📊 THỐNG KÊ THEO NGÂN HÀNG:
              Số reviews  Rating TB  % Tích cực
-bank_name                                     
+bank_name
 MSB                1909       3.03       45.73
 Synthetic          1260       3.02       50.00
 Agribank           3070       3.00       40.00
@@ -276,7 +276,7 @@ BƯỚC 13: LƯU MÔ HÌNH TỐT NHẤT
    • ROC-AUC: 0.0000
 
 ✨ CẢI TIẾN (CONTENT-BASED SENTIMENT RE-LABELING):
-   ✅ 150+ teencode words (vs 50 base)
+   ✅ 150+ teencode words (vs 50base)
    ✅ CONTENT-BASED re-labeling (ưu tiên nội dung bình luận)
    ✅ Smart conflict resolution (score vs content)
    ✅ Multi-level confidence (75-90%)

@@ -1,0 +1,56 @@
+﻿bank_name,variable_x,variable_y,label,n_weeks,pearson_r,pearson_p,spearman_r,spearman_p,significant_pearson,significant_spearman
+ACB,avg_rating,weekly_return,Rating TB ↔ Return tuần,106,0.1498,0.1253,0.1141,0.2441,False,False
+ACB,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,106,0.0036,0.9705,0.0029,0.9765,False,False
+ACB,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,106,0.115,0.2404,0.0569,0.5621,False,False
+ACB,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,106,-0.115,0.2404,-0.0569,0.5621,False,False
+ACB,review_count,avg_volume,Số reviews ↔ Khối lượng GD,106,0.0558,0.57,0.1836,0.0596,False,False
+BIDV,avg_rating,weekly_return,Rating TB ↔ Return tuần,98,-0.1567,0.1234,-0.1592,0.1174,False,False
+BIDV,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,98,0.1141,0.2631,0.2592,0.01,False,True
+BIDV,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,98,-0.1029,0.3135,-0.0989,0.3328,False,False
+BIDV,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,98,0.1029,0.3135,0.0989,0.3328,False,False
+BIDV,review_count,avg_volume,Số reviews ↔ Khối lượng GD,98,0.2799,0.0052,0.2956,0.0031,True,True
+HDBank,avg_rating,weekly_return,Rating TB ↔ Return tuần,108,-0.1394,0.1502,-0.1204,0.2145,False,False
+HDBank,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,108,-0.6198,0.0,-0.668,0.0,True,True
+HDBank,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,108,-0.1558,0.1074,-0.143,0.1398,False,False
+HDBank,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,108,0.1558,0.1074,0.143,0.1398,False,False
+HDBank,review_count,avg_volume,Số reviews ↔ Khối lượng GD,108,-0.0188,0.8469,0.2381,0.0131,False,True
+MBBank,avg_rating,weekly_return,Rating TB ↔ Return tuần,56,0.013,0.9241,-0.0145,0.9157,False,False
+MBBank,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,56,0.5207,0.0,0.6225,0.0,True,True
+MBBank,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,56,0.0429,0.7535,0.0063,0.9635,False,False
+MBBank,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,56,-0.0429,0.7535,-0.0063,0.9635,False,False
+MBBank,review_count,avg_volume,Số reviews ↔ Khối lượng GD,56,0.0632,0.6436,0.2309,0.0868,False,False
+MSB,avg_rating,weekly_return,Rating TB ↔ Return tuần,108,0.0371,0.7033,0.0846,0.3841,False,False
+MSB,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,108,-0.4538,0.0,-0.5293,0.0,True,True
+MSB,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,108,0.05,0.6074,0.0813,0.403,False,False
+MSB,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,108,-0.05,0.6074,-0.0813,0.403,False,False
+MSB,review_count,avg_volume,Số reviews ↔ Khối lượng GD,108,0.0228,0.8149,0.0512,0.599,False,False
+OCB,avg_rating,weekly_return,Rating TB ↔ Return tuần,91,0.0642,0.5453,0.0612,0.5643,False,False
+OCB,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,91,0.0882,0.4058,0.0707,0.5053,False,False
+OCB,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,91,0.0541,0.6103,0.0548,0.6062,False,False
+OCB,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,91,-0.0541,0.6103,-0.0548,0.6062,False,False
+OCB,review_count,avg_volume,Số reviews ↔ Khối lượng GD,91,-0.066,0.534,0.0169,0.8734,False,False
+Sacombank,avg_rating,weekly_return,Rating TB ↔ Return tuần,108,-0.0768,0.4293,-0.0214,0.826,False,False
+Sacombank,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,108,0.3147,0.0009,0.2535,0.0081,True,True
+Sacombank,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,108,-0.0126,0.8969,0.0346,0.7222,False,False
+Sacombank,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,108,0.0126,0.8969,-0.0346,0.7222,False,False
+Sacombank,review_count,avg_volume,Số reviews ↔ Khối lượng GD,108,-0.1201,0.2157,-0.0703,0.4697,False,False
+TPBank,avg_rating,weekly_return,Rating TB ↔ Return tuần,108,0.0131,0.893,0.0684,0.4816,False,False
+TPBank,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,108,-0.4696,0.0,-0.3696,0.0001,True,True
+TPBank,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,108,0.0455,0.6404,0.0229,0.8139,False,False
+TPBank,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,108,-0.0455,0.6404,-0.0229,0.8139,False,False
+TPBank,review_count,avg_volume,Số reviews ↔ Khối lượng GD,108,0.385,0.0,0.0895,0.3568,True,False
+Techcombank,avg_rating,weekly_return,Rating TB ↔ Return tuần,108,0.1298,0.1806,0.0611,0.5301,False,False
+Techcombank,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,108,0.2509,0.0088,0.301,0.0015,True,True
+Techcombank,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,108,0.1261,0.1935,0.0528,0.5873,False,False
+Techcombank,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,108,-0.1261,0.1935,-0.0528,0.5873,False,False
+Techcombank,review_count,avg_volume,Số reviews ↔ Khối lượng GD,108,-0.0778,0.4237,-0.0909,0.3493,False,False
+Vietcombank,avg_rating,weekly_return,Rating TB ↔ Return tuần,107,0.1268,0.1932,0.0914,0.3489,False,False
+Vietcombank,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,107,0.0577,0.5553,0.125,0.1995,False,False
+Vietcombank,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,107,0.0967,0.3219,0.037,0.7049,False,False
+Vietcombank,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,107,-0.0967,0.3219,-0.037,0.7049,False,False
+Vietcombank,review_count,avg_volume,Số reviews ↔ Khối lượng GD,107,0.2749,0.0042,0.2985,0.0018,True,True
+VietinBank,avg_rating,weekly_return,Rating TB ↔ Return tuần,108,0.0149,0.8785,-0.0244,0.802,False,False
+VietinBank,avg_rating,avg_close,Rating TB ↔ Giá CP trung bình,108,0.2275,0.0179,0.1681,0.0821,True,False
+VietinBank,positive_ratio,weekly_return,% Tích cực ↔ Return tuần,108,-0.0279,0.7746,-0.0232,0.8113,False,False
+VietinBank,negative_ratio,weekly_return,% Tiêu cực ↔ Return tuần,108,0.0279,0.7746,0.0232,0.8113,False,False
+VietinBank,review_count,avg_volume,Số reviews ↔ Khối lượng GD,108,0.1453,0.1336,0.0451,0.6428,False,False

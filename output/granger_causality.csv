@@ -1,0 +1,23 @@
+﻿bank_name,cause,effect,label,best_lag,p_value,significant,interpretation
+ACB,avg_rating,weekly_return,Rating → Return?,2,0.0114,True,CÓ nhân quả Granger (lag=2 tuần)
+ACB,negative_ratio,weekly_return,% Tiêu cực → Return?,2,0.0171,True,CÓ nhân quả Granger (lag=2 tuần)
+BIDV,avg_rating,weekly_return,Rating → Return?,1,0.1204,False,Không có nhân quả Granger
+BIDV,negative_ratio,weekly_return,% Tiêu cực → Return?,1,0.3895,False,Không có nhân quả Granger
+HDBank,avg_rating,weekly_return,Rating → Return?,3,0.1518,False,Không có nhân quả Granger
+HDBank,negative_ratio,weekly_return,% Tiêu cực → Return?,1,0.482,False,Không có nhân quả Granger
+MBBank,avg_rating,weekly_return,Rating → Return?,1,0.8056,False,Không có nhân quả Granger
+MBBank,negative_ratio,weekly_return,% Tiêu cực → Return?,4,0.5976,False,Không có nhân quả Granger
+MSB,avg_rating,weekly_return,Rating → Return?,1,0.9467,False,Không có nhân quả Granger
+MSB,negative_ratio,weekly_return,% Tiêu cực → Return?,1,0.9602,False,Không có nhân quả Granger
+OCB,avg_rating,weekly_return,Rating → Return?,1,0.1834,False,Không có nhân quả Granger
+OCB,negative_ratio,weekly_return,% Tiêu cực → Return?,1,0.239,False,Không có nhân quả Granger
+Sacombank,avg_rating,weekly_return,Rating → Return?,1,0.43,False,Không có nhân quả Granger
+Sacombank,negative_ratio,weekly_return,% Tiêu cực → Return?,2,0.7243,False,Không có nhân quả Granger
+TPBank,avg_rating,weekly_return,Rating → Return?,3,0.2663,False,Không có nhân quả Granger
+TPBank,negative_ratio,weekly_return,% Tiêu cực → Return?,3,0.3763,False,Không có nhân quả Granger
+Techcombank,avg_rating,weekly_return,Rating → Return?,1,0.1096,False,Không có nhân quả Granger
+Techcombank,negative_ratio,weekly_return,% Tiêu cực → Return?,1,0.2852,False,Không có nhân quả Granger
+Vietcombank,avg_rating,weekly_return,Rating → Return?,4,0.0022,True,CÓ nhân quả Granger (lag=4 tuần)
+Vietcombank,negative_ratio,weekly_return,% Tiêu cực → Return?,4,0.1011,False,Không có nhân quả Granger
+VietinBank,avg_rating,weekly_return,Rating → Return?,1,0.8817,False,Không có nhân quả Granger
+VietinBank,negative_ratio,weekly_return,% Tiêu cực → Return?,1,0.5878,False,Không có nhân quả Granger
