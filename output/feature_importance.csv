@@ -1,0 +1,16 @@
+﻿feature,importance,importance_pct,type
+rolling_return_4w,0.3849079658935825,38.49,Financial
+lag_return_1w,0.14811574444156864,14.81,Financial
+lag_volume_change_1w,0.1350143921806944,13.5,Financial
+lag_return_3w,0.11565345406287869,11.57,Financial
+lag_return_2w,0.1101987764425624,11.02,Financial
+return_volatility_4w,0.08234356864108958,8.23,Financial
+lag_return_4w,0.004811353651679066,0.48,Financial
+sent_avg_rating,0.0036157755619010343,0.36,Sentiment
+sent_rating_change_1w,0.002730118194582085,0.27,Sentiment
+sent_momentum_4w,0.002702296378951094,0.27,Sentiment
+sent_review_count,0.0023324335337139065,0.23,Sentiment
+sent_lag_rating_1w,0.0022819254064789384,0.23,Sentiment
+sent_lag_neg_ratio_1w,0.001964869266063377,0.2,Sentiment
+sent_positive_ratio,0.0016739982958907575,0.17,Sentiment
+sent_negative_ratio,0.00165332804836347,0.17,Sentiment

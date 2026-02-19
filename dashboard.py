@@ -5,6 +5,7 @@ Based Sentiment Analysis of User Experience in Mobile Banking Applications on Ap
 -
 """
 
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -2004,14 +2005,262 @@ if df is not None:
                     f"""
                 **🔬 Tổng kết Granger Causality:**
                 - Có nhân quả Granger: **{sig_granger}/{len(fin_granger)}** cặp
-                - Diễn giải: {"Một số ngân hàng cho thấy sentiment tuần trước có khả năng dự báo return tuần sau." if sig_granger > 0 else "Sentiment không Granger-cause stock return cho hầu hết ngân hàng — phù hợp với lý thuyết thị trường hiệu quả (EMH)."}
+                - Diễn giải: {"Một số ngân hàng cho thấy sentiment tuần trước có khả năng dự báo return tuần sau." if sig_granger > 0 else "Sentiment không Granger-cause stock return cho hầu hết ngân hàng — cho thấy sentiment từ reviews ít có giá trị dự báo."}
                 """
                 )
 
             st.markdown("---")
 
             # ============================================
-            # 4.6: KEY FINDINGS
+            # 4.6: ML ABLATION STUDY - Stock Prediction
+            # ============================================
+            st.markdown("### 🧪 ML Ablation Study: Dự báo Return cổ phiếu")
+            st.markdown(
+                """
+            So sánh **Model A** (chỉ dùng biến tài chính) vs **Model B** (thêm biến sentiment)
+            để đánh giá **mức đóng góp thực sự** của sentiment vào dự báo giá cổ phiếu.
+            """
+            )
+
+            # Load prediction results
+            pred_comparison_path = os.path.join(
+                "output", "stock_prediction_comparison.csv"
+            )
+            feat_importance_path = os.path.join("output", "feature_importance.csv")
+            pred_per_bank_path = os.path.join("output", "stock_prediction_per_bank.csv")
+            pred_summary_path = os.path.join("output", "stock_prediction_summary.json")
+
+            has_prediction_data = all(
+                os.path.exists(p)
+                for p in [
+                    pred_comparison_path,
+                    feat_importance_path,
+                    pred_per_bank_path,
+                    pred_summary_path,
+                ]
+            )
+
+            if has_prediction_data:
+                pred_comp = pd.read_csv(pred_comparison_path)
+                feat_imp = pd.read_csv(feat_importance_path)
+                pred_bank = pd.read_csv(pred_per_bank_path)
+                with open(pred_summary_path, "r", encoding="utf-8") as f:
+                    pred_summary = json.load(f)
+
+                # --- 4.6.1: Model Comparison Table ---
+                st.markdown("#### 📊 So sánh Model A vs Model B")
+
+                col_tbl1, col_tbl2 = st.columns([3, 2])
+                with col_tbl1:
+                    pred_display = pred_comp.copy()
+                    pred_display.columns = [
+                        "Model",
+                        "Variant",
+                        "Số features",
+                        "RMSE",
+                        "MAE",
+                        "R²",
+                    ]
+                    st.dataframe(
+                        pred_display.style.format(
+                            {"RMSE": "{:.4f}", "MAE": "{:.4f}", "R²": "{:.4f}"}
+                        ).apply(
+                            lambda row: [
+                                (
+                                    "background-color: #dbeafe"
+                                    if row["Variant"] == "A (Financial)"
+                                    else "background-color: #fef3c7"
+                                )
+                            ]
+                            * len(row),
+                            axis=1,
+                        ),
+                        use_container_width=True,
+                    )
+
+                with col_tbl2:
+                    # Summary metrics
+                    sent_pct = pred_summary.get("sentiment_contribution_pct", 0)
+                    banks_improved = pred_summary.get("banks_improved", 0)
+                    total_banks = pred_summary.get("total_banks", 11)
+
+                    st.metric("Đóng góp Sentiment", f"{sent_pct:.1f}%", delta=None)
+                    st.metric(
+                        "Banks cải thiện với sentiment",
+                        f"{banks_improved}/{total_banks}",
+                    )
+                    st.metric(
+                        "Kích thước dataset",
+                        f"{pred_summary.get('dataset_size', 'N/A')} tuần",
+                    )
+
+                # --- 4.6.2: Grouped Bar Chart - RMSE comparison ---
+                st.markdown("#### 📈 So sánh RMSE: Model A vs Model B")
+
+                fig_pred = go.Figure()
+                for variant, color in [
+                    ("A (Financial)", "#3b82f6"),
+                    ("B (+ Sentiment)", "#f59e0b"),
+                ]:
+                    subset = pred_comp[pred_comp["variant"] == variant]
+                    fig_pred.add_trace(
+                        go.Bar(
+                            x=subset["model"],
+                            y=subset["rmse"],
+                            name=variant,
+                            marker=dict(
+                                color=color, line=dict(color="black", width=1.5)
+                            ),
+                            text=[f"{v:.4f}" for v in subset["rmse"]],
+                            textposition="outside",
+                        )
+                    )
+                fig_pred.update_layout(
+                    barmode="group",
+                    height=400,
+                    yaxis_title="RMSE (thấp hơn = tốt hơn)",
+                    xaxis_title="Model",
+                    legend=dict(x=0.01, y=0.99),
+                    title_text="<b>RMSE: Financial-only vs Financial+Sentiment</b>",
+                    title_font=dict(size=14, color="#1e40af"),
+                )
+                st.plotly_chart(fig_pred, use_container_width=True)
+
+                # --- 4.6.3: Feature Importance Chart ---
+                st.markdown("#### 🏆 Feature Importance (Gradient Boosting)")
+
+                feat_imp_sorted = feat_imp.sort_values("importance", ascending=True)
+                fig_feat = go.Figure()
+                fig_feat.add_trace(
+                    go.Bar(
+                        y=feat_imp_sorted["feature"],
+                        x=feat_imp_sorted["importance_pct"],
+                        orientation="h",
+                        marker=dict(
+                            color=[
+                                "#3b82f6" if t == "Financial" else "#ef4444"
+                                for t in feat_imp_sorted["type"]
+                            ],
+                            line=dict(color="black", width=1),
+                        ),
+                        text=[f"{v:.1f}%" for v in feat_imp_sorted["importance_pct"]],
+                        textposition="outside",
+                    )
+                )
+                fig_feat.update_layout(
+                    height=500,
+                    xaxis_title="Importance (%)",
+                    title_text="<b>Feature Importance - Tài chính (xanh) vs Sentiment (đỏ)</b>",
+                    title_font=dict(size=14, color="#1e40af"),
+                    margin=dict(l=180),
+                )
+                st.plotly_chart(fig_feat, use_container_width=True)
+
+                # Financial vs Sentiment total
+                fin_total = feat_imp[feat_imp["type"] == "Financial"][
+                    "importance_pct"
+                ].sum()
+                sent_total = feat_imp[feat_imp["type"] == "Sentiment"][
+                    "importance_pct"
+                ].sum()
+                st.info(
+                    f"**Tổng importance:** Tài chính = **{fin_total:.1f}%** | Sentiment = **{sent_total:.1f}%**"
+                )
+
+                # --- 4.6.4: Per-bank Comparison ---
+                st.markdown("#### 🏦 So sánh theo từng ngân hàng")
+
+                # Pivot to show A vs B side by side
+                bank_a = pred_bank[pred_bank["variant"] == "A"].set_index("bank_name")
+                bank_b = pred_bank[pred_bank["variant"] == "B"].set_index("bank_name")
+                bank_compare = pd.DataFrame(
+                    {
+                        "Ngân hàng": bank_a.index,
+                        "R² (Model A)": bank_a["r2"].values,
+                        "R² (Model B)": bank_b["r2"].values,
+                        "ΔR²": bank_b["r2"].values - bank_a["r2"].values,
+                        "RMSE (A)": bank_a["rmse"].values,
+                        "RMSE (B)": bank_b["rmse"].values,
+                        "Cải thiện?": [
+                            (
+                                "✅"
+                                if (bank_b["r2"].values[i] - bank_a["r2"].values[i]) > 0
+                                else "❌"
+                            )
+                            for i in range(len(bank_a))
+                        ],
+                    }
+                )
+
+                st.dataframe(
+                    bank_compare.style.format(
+                        {
+                            "R² (Model A)": "{:.4f}",
+                            "R² (Model B)": "{:.4f}",
+                            "ΔR²": "{:+.4f}",
+                            "RMSE (A)": "{:.4f}",
+                            "RMSE (B)": "{:.4f}",
+                        }
+                    ).apply(
+                        lambda row: [
+                            (
+                                ""
+                                if col != "ΔR²"
+                                else (
+                                    "color: green" if row["ΔR²"] > 0 else "color: red"
+                                )
+                            )
+                            for col in row.index
+                        ],
+                        axis=1,
+                    ),
+                    use_container_width=True,
+                )
+
+                # Per-bank bar chart
+                fig_bank = go.Figure()
+                fig_bank.add_trace(
+                    go.Bar(
+                        x=bank_compare["Ngân hàng"],
+                        y=bank_compare["R² (Model A)"],
+                        name="Model A (Financial)",
+                        marker=dict(color="#3b82f6"),
+                    )
+                )
+                fig_bank.add_trace(
+                    go.Bar(
+                        x=bank_compare["Ngân hàng"],
+                        y=bank_compare["R² (Model B)"],
+                        name="Model B (+Sentiment)",
+                        marker=dict(color="#f59e0b"),
+                    )
+                )
+                fig_bank.update_layout(
+                    barmode="group",
+                    height=450,
+                    yaxis_title="R² Score",
+                    title_text="<b>R² theo ngân hàng: Model A vs Model B</b>",
+                    title_font=dict(size=14, color="#1e40af"),
+                    xaxis_tickangle=-45,
+                )
+                st.plotly_chart(fig_bank, use_container_width=True)
+
+            else:
+                st.warning(
+                    """
+                ⚠️ **Chưa có dữ liệu ML Prediction.**
+
+                Chạy script sau để tạo dữ liệu:
+                ```bash
+                python stock_prediction.py
+                ```
+                """
+                )
+
+            st.markdown("---")
+
+            # ============================================
+            # 4.7: KEY FINDINGS (updated with ablation results)
             # ============================================
             st.markdown("### 💡 Kết luận & Insights")
 
@@ -2021,29 +2270,56 @@ if df is not None:
                 else 0
             )
 
-            if abs(avg_corr) < 0.1:
-                finding = "**Không có tương quan có ý nghĩa** giữa sentiment trên app store và giá cổ phiếu ngân hàng."
-                explain = """Điều này phù hợp với thực tế vì:
-                1. Giá cổ phiếu bị ảnh hưởng bởi nhiều yếu tố vĩ mô (lãi suất, GDP, VN-Index...)
-                2. Reviews app chỉ phản ánh trải nghiệm người dùng, không phải hiệu quả kinh doanh
-                3. Số lượng reviews/tuần/bank còn hạn chế (~7-15 reviews)
-                4. Phù hợp với **Giả thuyết Thị trường Hiệu quả (EMH)** — thông tin từ reviews đã được phản ánh trong giá
-                """
-            elif avg_corr > 0.1:
-                finding = "**Có tương quan dương yếu** giữa sentiment và giá cổ phiếu."
-                explain = "Ngân hàng có sentiment tốt hơn có xu hướng có hiệu suất cổ phiếu tốt hơn, nhưng tương quan yếu."
+            # Build conclusion based on ALL evidence
+            sig_corr_count = (
+                ((fin_corr["pearson_p"] < 0.05) | (fin_corr["spearman_p"] < 0.05)).sum()
+                if fin_corr is not None and len(fin_corr) > 0
+                else 0
+            )
+            total_corr_count = len(fin_corr) if fin_corr is not None else 0
+
+            conclusion_parts = []
+            conclusion_parts.append(
+                f"1. **Tương quan yếu**: Trung bình |r| = {abs(avg_corr):.3f}, chỉ {sig_corr_count}/{total_corr_count} cặp có ý nghĩa thống kê (p<0.05)"
+            )
+
+            if "sig_granger" in dir():
+                conclusion_parts.append(
+                    f"2. **Granger Causality hạn chế**: {sig_granger}/{len(fin_granger) if 'fin_granger' in dir() else '?'} ngân hàng có nhân quả Granger (p<0.05)"
+                )
             else:
-                finding = "**Có tương quan âm yếu** — cần phân tích sâu hơn."
-                explain = "Kết quả ngược trực giác, có thể do các yếu tố nhiễu."
+                conclusion_parts.append(
+                    "2. **Granger Causality**: Chưa đủ dữ liệu để đánh giá"
+                )
+
+            if has_prediction_data:
+                sent_pct_val = pred_summary.get("sentiment_contribution_pct", 0)
+                banks_imp_val = pred_summary.get("banks_improved", 0)
+                total_banks_val = pred_summary.get("total_banks", 11)
+                conclusion_parts.append(
+                    f"3. **Ablation Study**: Sentiment chỉ đóng góp **{sent_pct_val:.1f}%** feature importance. Chỉ {banks_imp_val}/{total_banks_val} ngân hàng cải thiện R² khi thêm sentiment"
+                )
+                conclusion_parts.append(
+                    "4. **Kết luận tổng thể**: Sentiment từ app reviews có tác động **rất nhỏ (marginal)** đến biến động giá cổ phiếu ngân hàng"
+                )
+            else:
+                conclusion_parts.append(
+                    "3. **Cần thêm phân tích**: Chạy `stock_prediction.py` để có kết quả ablation study"
+                )
+
+            conclusion_parts.append(
+                """
+5. **Giải thích**:
+   - Giá cổ phiếu bị chi phối bởi yếu tố vĩ mô (lãi suất, VN-Index, GDP...)
+   - Reviews app phản ánh UX, không phải hiệu quả tài chính
+   - Số lượng reviews/tuần/bank hạn chế (~7-15)
+   - Thị trường chứng khoán VN có đặc thù riêng (retail-dominated)"""
+            )
 
             st.success(
-                f"""
-            📊 {finding}
-
-            {explain}
-
-            > *Lưu ý: Correlation ≠ Causation. Kết quả này là phân tích khám phá (exploratory), không phải kết luận nhân quả.*
-            """
+                "📊 **Tổng hợp bằng chứng:**\n\n"
+                + "\n".join(conclusion_parts)
+                + "\n\n> *Lưu ý: Correlation ≠ Causation. Đây là phân tích khám phá (exploratory analysis).*"
             )
 
         else:
